@@ -1,50 +1,41 @@
 export default function Footer() {
   return (
-    <footer
-      className="relative py-10 px-6"
-      style={{ borderTop: '1px solid rgba(108,99,255,0.1)' }}
-    >
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, #6C63FF, #00D4FF)',
-              boxShadow: '0 0 10px rgba(108,99,255,0.4)',
-            }}
-          >
-            <span className="text-white font-bold text-[9px]">A</span>
-          </div>
-          <span className="font-playfair font-bold text-sm" style={{ color: 'var(--text-muted)' }}>
-            AXNOIZ
-          </span>
-        </div>
-
-        {/* Links */}
-        <div className="flex items-center gap-6">
-          {['Privacy', 'Terms', 'Contact'].map((link) => (
-            <a
-              key={link}
-              href="#"
-              className="text-xs transition-colors duration-200"
-              style={{ color: 'var(--text-dim)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
-            >
-              {link}
-            </a>
-          ))}
-        </div>
-
-        {/* Copyright */}
-        <p className="text-xs text-center" style={{ color: 'var(--text-dim)' }}>
-          © 2026 Axnoiz.{' '}
-          <span style={{ color: 'rgba(108,99,255,0.5)' }}>
-            Built for the relentless.
-          </span>
-        </p>
+    <footer style={{
+      padding: '40px 40px',
+      borderTop: '1px solid var(--border)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '16px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="8" stroke="rgba(196,194,216,0.2)" strokeWidth="0.5" />
+          <circle cx="9" cy="9" r="3" fill="rgba(128,112,200,0.4)" />
+          <circle cx="9" cy="9" r="1.2" fill="rgba(196,194,216,0.6)" />
+        </svg>
+        <span style={{
+          fontFamily: 'Cormorant Garamond, serif',
+          fontWeight: 300,
+          fontSize: '13px',
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+        }}>
+          Axnoiz
+        </span>
       </div>
+
+      <div style={{ display: 'flex', gap: '28px' }}>
+        {['Privacy', 'Terms', 'Contact'].map((l) => (
+          <a key={l} href="#" className="link-subtle">{l}</a>
+        ))}
+      </div>
+
+      <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '0.06em' }}>
+        © 2026 Axnoiz
+      </p>
     </footer>
   )
 }

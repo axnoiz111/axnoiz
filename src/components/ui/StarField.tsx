@@ -1,107 +1,90 @@
 import { useEffect, useRef } from 'react'
 
 interface Star {
-  x: number
-  y: number
-  r: number
-  opacity: number
-  speed: number
-  angle: number
-  twinkleSpeed: number
-  twinkleOffset: number
+  x: number; y: number; r: number
+  baseOpacity: number; opacity: number
+  vx: number; vy: number
+  twinklePhase: number; twinkleSpeed: number
 }
 
-interface StarFieldProps {
-  density?: number
-  className?: string
-}
-
-export default function StarField({ density = 180, className = '' }: StarFieldProps) {
+export default function StarField() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rafRef = useRef<number>(0)
   const starsRef = useRef<Star[]>([])
-  const frameRef = useRef<number>(0)
-  const timeRef = useRef<number>(0)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const canvas = canvasRef.current!
     const ctx = canvas.getContext('2d')!
+    let W = 0, H = 0
 
     const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = document.documentElement.scrollHeight
-      initStars()
+      W = canvas.width = window.innerWidth
+      H = canvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight)
+      init()
     }
 
-    const initStars = () => {
-      starsRef.current = Array.from({ length: density }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 1.8 + 0.3,
-        opacity: Math.random() * 0.5 + 0.15,
-        speed: Math.random() * 0.15 + 0.03,
-        angle: Math.random() * Math.PI * 2,
-        twinkleSpeed: Math.random() * 0.02 + 0.005,
-        twinkleOffset: Math.random() * Math.PI * 2,
-      }))
-    }
-
-    const draw = (time: number) => {
-      const dt = time - timeRef.current
-      timeRef.current = time
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      starsRef.current.forEach((star) => {
-        // Gentle drift
-        star.x += Math.cos(star.angle) * star.speed * (dt / 16)
-        star.y += Math.sin(star.angle) * star.speed * (dt / 16)
-
-        // Wrap around
-        if (star.x < 0) star.x = canvas.width
-        if (star.x > canvas.width) star.x = 0
-        if (star.y < 0) star.y = canvas.height
-        if (star.y > canvas.height) star.y = 0
-
-        // Twinkle
-        const twinkle = 0.5 + 0.5 * Math.sin(time * star.twinkleSpeed + star.twinkleOffset)
-        const alpha = star.opacity * (0.4 + 0.6 * twinkle)
-
-        // Draw star with soft glow
-        const gradient = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.r * 3)
-        gradient.addColorStop(0, `rgba(240, 244, 255, ${alpha})`)
-        gradient.addColorStop(0.4, `rgba(200, 190, 255, ${alpha * 0.4})`)
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
-
-        ctx.beginPath()
-        ctx.arc(star.x, star.y, star.r * 3, 0, Math.PI * 2)
-        ctx.fillStyle = gradient
-        ctx.fill()
-
-        ctx.beginPath()
-        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
-        ctx.fill()
+    const init = () => {
+      const count = Math.floor((W * H) / 14000)  // sparse
+      starsRef.current = Array.from({ length: count }, () => {
+        const base = Math.random() * 0.25 + 0.05  // max opacity 0.30 — very subtle
+        return {
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: Math.random() * 0.9 + 0.2,
+          baseOpacity: base,
+          opacity: base,
+          vx: (Math.random() - 0.5) * 0.04,
+          vy: (Math.random() - 0.5) * 0.04,
+          twinklePhase: Math.random() * Math.PI * 2,
+          twinkleSpeed: Math.random() * 0.008 + 0.003,
+        }
       })
+    }
 
-      frameRef.current = requestAnimationFrame(draw)
+    let t = 0
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H)
+      t += 1
+
+      for (const s of starsRef.current) {
+        s.x += s.vx
+        s.y += s.vy
+        if (s.x < 0) s.x = W
+        if (s.x > W) s.x = 0
+        if (s.y < 0) s.y = H
+        if (s.y > H) s.y = 0
+
+        s.twinklePhase += s.twinkleSpeed
+        s.opacity = s.baseOpacity * (0.6 + 0.4 * Math.sin(s.twinklePhase))
+
+        ctx.beginPath()
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(200,198,220,${s.opacity})`
+        ctx.fill()
+      }
+
+      rafRef.current = requestAnimationFrame(draw)
     }
 
     resize()
     window.addEventListener('resize', resize)
-    frameRef.current = requestAnimationFrame(draw)
-
+    rafRef.current = requestAnimationFrame(draw)
     return () => {
-      cancelAnimationFrame(frameRef.current)
+      cancelAnimationFrame(rafRef.current)
       window.removeEventListener('resize', resize)
     }
-  }, [density])
+  }, [])
 
   return (
     <canvas
       ref={canvasRef}
-      className={`fixed top-0 left-0 w-full h-full pointer-events-none ${className}`}
-      style={{ zIndex: 0 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        opacity: 1,
+      }}
     />
   )
 }
