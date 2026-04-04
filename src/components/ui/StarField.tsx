@@ -26,7 +26,7 @@ export default function StarField() {
     const init = () => {
       const count = Math.floor((W * H) / 14000)  // sparse
       starsRef.current = Array.from({ length: count }, () => {
-        const base = Math.random() * 0.25 + 0.05  // max opacity 0.30 — very subtle
+        const base = Math.random() * 0.35 + 0.08  // max opacity 0.43 — visible but calm
         return {
           x: Math.random() * W,
           y: Math.random() * H,

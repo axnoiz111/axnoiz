@@ -1,4 +1,5 @@
 import StarField from '../components/ui/StarField'
+import CosmicBackground from '../components/ui/CosmicBackground'
 import Navbar from '../components/landing/Navbar'
 import Hero from '../components/landing/Hero'
 import Intro from '../components/landing/Intro'
@@ -11,6 +12,7 @@ import Footer from '../components/landing/Footer'
 export default function Landing() {
   return (
     <div style={{ position: 'relative', background: 'var(--bg)' }}>
+      <CosmicBackground />
       <StarField />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Navbar />

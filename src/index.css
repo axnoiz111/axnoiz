@@ -5,11 +5,11 @@
   --bg:           #05070F;
   --bg-2:         #07091A;
   --surface:      rgba(255,255,255,0.025);
-  --border:       rgba(255,255,255,0.055);
-  --text:         #C4C2D8;
-  --text-bright:  #E8E6F4;
-  --text-muted:   #4E4C63;
-  --text-dim:     #282638;
+  --border:       rgba(255,255,255,0.07);
+  --text:         #D0CEEA;
+  --text-bright:  #EDEAF8;
+  --text-muted:   #9896B8;
+  --text-dim:     #4A4860;
   --accent:       #8070C8;
   --accent-soft:  rgba(128,112,200,0.12);
 }
