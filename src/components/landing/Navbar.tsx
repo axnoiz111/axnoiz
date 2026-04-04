@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 
-export default function Navbar() {
+export default function Navbar({ onOpenLogin }: { onOpenLogin?: () => void }) {
   const [visible, setVisible] = useState(true)
   const [last, setLast] = useState(0)
 
@@ -54,9 +54,9 @@ export default function Navbar() {
       <button
         className="btn"
         style={{ padding: '10px 24px', fontSize: '11px' }}
-        onClick={() => document.getElementById('begin')?.scrollIntoView({ behavior: 'smooth' })}
+        onClick={onOpenLogin}
       >
-        Begin
+        Login
       </button>
     </motion.header>
   )

@@ -1,9 +1,13 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 
-export default function FinalCTA() {
+export default function FinalCTA({ onOpenLogin, onInViewChange }: { onOpenLogin?: () => void, onInViewChange?: (inView: boolean) => void }) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: false, margin: '-80px' })
+
+  useEffect(() => {
+    onInViewChange?.(inView)
+  }, [inView, onInViewChange])
 
   return (
     <section ref={ref} className="section" id="begin" style={{ textAlign: 'center' }}>
@@ -77,6 +81,7 @@ export default function FinalCTA() {
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
         >
           <button
+            onClick={onOpenLogin}
             className="btn"
             style={{ padding: '18px 56px', fontSize: '12px', letterSpacing: '0.2em' }}
           >

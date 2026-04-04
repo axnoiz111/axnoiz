@@ -7,8 +7,13 @@ import Philosophy from '../components/landing/Philosophy'
 import SocialProof from '../components/landing/SocialProof'
 import FinalCTA from '../components/landing/FinalCTA'
 import Footer from '../components/landing/Footer'
+import LoginModal from '../components/auth/LoginModal'
+import FloatingArrow from '../components/ui/FloatingArrow'
+import { useState } from 'react'
 
 export default function Landing() {
+  const [showLogin, setShowLogin] = useState(false)
+  const [ctaInView, setCtaInView] = useState(false)
   return (
     <div style={{ position: 'relative', minHeight: '100svh', background: '#020409' }}>
 
@@ -17,15 +22,18 @@ export default function Landing() {
 
       {/* ── all existing UI — untouched, sits above background ── */}
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <Navbar />
+        <Navbar onOpenLogin={() => setShowLogin(true)} />
         <Hero />
         <Intro />
         <HowItWorks />
         <Philosophy />
         <SocialProof />
-        <FinalCTA />
+        <FinalCTA onOpenLogin={() => setShowLogin(true)} onInViewChange={setCtaInView} />
         <Footer />
       </div>
+
+      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+      <FloatingArrow isVisible={!ctaInView} />
 
     </div>
   )
