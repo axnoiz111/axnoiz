@@ -43,17 +43,24 @@ const PARTICLE_OPTIONS = {
     shape: { type: 'circle' },
 
     opacity: {
-      value: { min: 0.25, max: 0.75 },
+      value: { min: 0.2, max: 0.7 },  // some barely visible, some brighter
       animation: {
         enable: true,
-        speed: 0.6,           // gentle visible pulse — not blinking
-        sync: false,
+        speed: 0.4,                    // slow breath — not blinking
+        sync: false,                   // each star pulses independently
+        minimumValue: 0.2,
       },
     },
 
     size: {
-      value: { min: 1.0, max: 3.0 },
+      value: { min: 0.5, max: 2.2 },  // small = distant, larger = closer
       animation: { enable: false },
+    },
+
+    shadow: {
+      enable: true,
+      color: { value: '#ffffff' },
+      blur: 6,                         // soft star halo — not harsh
     },
 
     move: {
