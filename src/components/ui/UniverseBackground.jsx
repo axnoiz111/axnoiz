@@ -43,7 +43,7 @@ const PARTICLE_OPTIONS = {
     shape: { type: 'circle' },
 
     opacity: {
-      value: { min: 0.12, max: 0.55 },
+      value: { min: 0.25, max: 0.75 },
       animation: {
         enable: true,
         speed: 0.6,           // gentle visible pulse — not blinking
@@ -52,7 +52,7 @@ const PARTICLE_OPTIONS = {
     },
 
     size: {
-      value: { min: 0.4, max: 1.7 },
+      value: { min: 1.0, max: 3.0 },
       animation: { enable: false },
     },
 
