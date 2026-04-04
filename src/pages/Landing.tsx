@@ -1,5 +1,4 @@
-import StarField from '../components/ui/StarField'
-import CosmicBackground from '../components/ui/CosmicBackground'
+import UniverseBackground from '../components/ui/UniverseBackground'
 import Navbar from '../components/landing/Navbar'
 import Hero from '../components/landing/Hero'
 import Intro from '../components/landing/Intro'
@@ -11,9 +10,12 @@ import Footer from '../components/landing/Footer'
 
 export default function Landing() {
   return (
-    <div style={{ position: 'relative', background: 'var(--bg)' }}>
-      <CosmicBackground />
-      <StarField />
+    <div style={{ position: 'relative', minHeight: '100svh', background: '#020409' }}>
+
+      {/* ── background: sits at z-index 0, pointerEvents none ── */}
+      <UniverseBackground />
+
+      {/* ── all existing UI — untouched, sits above background ── */}
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Navbar />
         <Hero />
@@ -24,6 +26,7 @@ export default function Landing() {
         <FinalCTA />
         <Footer />
       </div>
+
     </div>
   )
 }
