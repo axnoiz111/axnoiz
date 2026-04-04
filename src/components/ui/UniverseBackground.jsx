@@ -29,10 +29,10 @@ const PARTICLE_OPTIONS = {
 
   particles: {
     number: {
-      value: 130,
+      value: 180,
       density: {
         enable: true,
-        area: 1400,   // lower = denser; higher = more spread out
+        area: 1000,   // lower = denser; higher = more spread out
       },
     },
 
@@ -43,10 +43,10 @@ const PARTICLE_OPTIONS = {
     shape: { type: 'circle' },
 
     opacity: {
-      value: { min: 0.08, max: 0.42 },
+      value: { min: 0.12, max: 0.55 },
       animation: {
         enable: true,
-        speed: 0.25,          // very slow fade-pulse
+        speed: 0.6,           // gentle visible pulse — not blinking
         sync: false,
       },
     },
@@ -58,7 +58,7 @@ const PARTICLE_OPTIONS = {
 
     move: {
       enable: true,
-      speed: 0.06,            // ← extremely slow drift
+      speed: 0.2,             // ← subtle but perceptible drift
       direction: 'none',
       random: true,
       straight: false,
@@ -115,49 +115,12 @@ export default function UniverseBackground() {
         ].join(', '),
       }} />
 
-      {/* ── LAYER 2: nebula atmosphere (soft, blurred CSS blobs) ────────── */}
-
-      {/* Primary — upper-left violet cloud */}
+      {/* ── LAYER 2: single minimal depth tint — barely perceptible ───── */}
       <div style={{
         position: 'absolute',
-        top: '-8%', left: '-6%',
-        width: '62vw', height: '62vw',
-        maxWidth: '820px', maxHeight: '820px',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(52,36,128,0.15) 0%, rgba(32,22,88,0.07) 42%, transparent 70%)',
-        filter: 'blur(72px)',
-      }} />
-
-      {/* Secondary — lower-right indigo */}
-      <div style={{
-        position: 'absolute',
-        bottom: '-6%', right: '-6%',
-        width: '55vw', height: '55vw',
-        maxWidth: '740px', maxHeight: '740px',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(22,28,110,0.14) 0%, rgba(14,18,72,0.06) 44%, transparent 70%)',
-        filter: 'blur(64px)',
-      }} />
-
-      {/* Milky-way dust band — diagonal streak */}
-      <div style={{
-        position: 'absolute',
-        top: '8%', left: '-18%',
-        width: '136%', height: '52%',
-        background: 'radial-gradient(ellipse at 54% 50%, rgba(58,44,108,0.12) 0%, rgba(36,28,76,0.05) 48%, transparent 74%)',
-        transform: 'rotate(-14deg)',
-        filter: 'blur(54px)',
-      }} />
-
-      {/* Tertiary — mid-right cool purple cluster */}
-      <div style={{
-        position: 'absolute',
-        top: '38%', right: '4%',
-        width: '28vw', height: '28vw',
-        maxWidth: '420px', maxHeight: '420px',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(72,38,128,0.09) 0%, transparent 68%)',
-        filter: 'blur(46px)',
+        inset: 0,
+        background: 'radial-gradient(ellipse at 40% 35%, rgba(30,20,70,0.10) 0%, transparent 65%)',
+        filter: 'blur(80px)',
       }} />
 
       {/* ── LAYER 3: tsparticles stars ──────────────────────────────────── */}
