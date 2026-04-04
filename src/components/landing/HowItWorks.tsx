@@ -21,13 +21,13 @@ const steps = [
 
 function Step({ step, index }: { step: typeof steps[number]; index: number }) {
   const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-80px' })
+  const inView = useInView(ref, { once: false, margin: '-80px' })
 
   return (
     <motion.div
       ref={ref}
       initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
       transition={{ duration: 1, delay: index * 0.18, ease: 'easeOut' }}
       style={{
         display: 'grid',
@@ -88,7 +88,7 @@ export default function HowItWorks() {
             className="eyebrow"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: '-60px' }}
+            viewport={{ once: false, margin: '-60px' }}
             transition={{ duration: 1 }}
             style={{ marginBottom: '0' }}
           >
@@ -105,7 +105,7 @@ export default function HowItWorks() {
         <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: false, margin: '-60px' }}
           transition={{ duration: 1, delay: 0.4 }}
           style={{
             fontSize: '13px',

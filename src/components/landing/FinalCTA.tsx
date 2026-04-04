@@ -3,7 +3,7 @@ import { motion, useInView } from 'framer-motion'
 
 export default function FinalCTA() {
   const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-80px' })
+  const inView = useInView(ref, { once: false, margin: '-80px' })
 
   return (
     <section ref={ref} className="section" id="begin" style={{ textAlign: 'center' }}>
@@ -44,7 +44,7 @@ export default function FinalCTA() {
         <motion.h2
           className="font-display"
           initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 1.1, delay: 0.2, ease: 'easeOut' }}
           style={{
             fontSize: 'clamp(36px, 6vw, 64px)',
@@ -58,7 +58,7 @@ export default function FinalCTA() {
         <motion.h2
           className="font-display-italic"
           initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 1.1, delay: 0.35, ease: 'easeOut' }}
           style={{
             fontSize: 'clamp(36px, 6vw, 64px)',

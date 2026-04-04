@@ -2,8 +2,8 @@
 @import "tailwindcss";
 
 :root {
-  --bg:           #05070F;
-  --bg-2:         #07091A;
+  --bg:           #020409;
+  --bg-2:         #03060F;
   --surface:      rgba(255,255,255,0.025);
   --border:       rgba(255,255,255,0.07);
   --text:         #D0CEEA;

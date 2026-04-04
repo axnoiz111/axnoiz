@@ -21,13 +21,13 @@ const voices = [
 
 function Voice({ v, index }: { v: typeof voices[number]; index: number }) {
   const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-60px' })
+  const inView = useInView(ref, { once: false, margin: '-60px' })
 
   return (
     <motion.div
       ref={ref}
       initial={{ opacity: 0, y: 20 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
       transition={{ duration: 1, delay: index * 0.2, ease: 'easeOut' }}
       style={{
         padding: '40px 0',
@@ -67,7 +67,7 @@ export default function SocialProof() {
           className="eyebrow"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: false, margin: '-60px' }}
           transition={{ duration: 1 }}
           style={{ marginBottom: '8px' }}
         >
@@ -77,7 +77,7 @@ export default function SocialProof() {
         <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: false, margin: '-60px' }}
           transition={{ duration: 1, delay: 0.1 }}
           style={{
             fontFamily: 'Cormorant Garamond, serif',

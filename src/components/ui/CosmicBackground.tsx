@@ -1,7 +1,8 @@
 /**
- * CosmicBackground — fixed, full-page nebula atmosphere.
- * Layered radial gradients at low opacity create the feeling of
- * deep space without overpowering the content.
+ * CosmicBackground — matches the reference photo:
+ * very dark midnight-blue base, subtle purple/indigo nebula clouds,
+ * faint milky-way dust band.
+ * All fixed, blurred, low opacity — atmosphere not distraction.
  */
 export default function CosmicBackground() {
   return (
@@ -12,73 +13,72 @@ export default function CosmicBackground() {
         inset: 0,
         zIndex: 0,
         pointerEvents: 'none',
-        overflow: 'hidden',
+        // Base: near-black with a very faint blue cast — matches photo
+        background: 'radial-gradient(ellipse at 40% 30%, #06080F 0%, #020409 60%, #010206 100%)',
       }}
     >
-      {/* Primary nebula — large violet cloud, top-left */}
+      {/* Milky-way dust band — diffuse diagonal streak, very faint */}
       <div style={{
         position: 'absolute',
-        top: '-15%',
-        left: '-10%',
-        width: '70vw',
-        height: '70vw',
-        maxWidth: '900px',
-        maxHeight: '900px',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(72,52,160,0.18) 0%, rgba(50,30,110,0.10) 35%, transparent 70%)',
-        filter: 'blur(60px)',
-      }} />
-
-      {/* Secondary nebula — blue cloud, bottom-right */}
-      <div style={{
-        position: 'absolute',
-        bottom: '-10%',
-        right: '-8%',
-        width: '60vw',
-        height: '60vw',
-        maxWidth: '800px',
-        maxHeight: '800px',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(30,40,130,0.16) 0%, rgba(20,25,90,0.09) 40%, transparent 70%)',
-        filter: 'blur(55px)',
-      }} />
-
-      {/* Tertiary — warm dust cloud, mid-right */}
-      <div style={{
-        position: 'absolute',
-        top: '38%',
-        right: '-5%',
-        width: '40vw',
-        height: '40vw',
-        maxWidth: '600px',
-        maxHeight: '600px',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(90,45,140,0.10) 0%, rgba(60,30,100,0.05) 45%, transparent 70%)',
+        top: '10%',
+        left: '-20%',
+        width: '140%',
+        height: '55%',
+        background: 'radial-gradient(ellipse at 55% 50%, rgba(60,50,110,0.14) 0%, rgba(40,35,80,0.07) 45%, transparent 75%)',
+        transform: 'rotate(-15deg)',
         filter: 'blur(50px)',
       }} />
 
-      {/* Deep anchor — faint warm glow at center-bottom, grounds the page */}
+      {/* Primary nebula cloud — upper left, violet */}
       <div style={{
         position: 'absolute',
-        bottom: '20%',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '50vw',
-        height: '40vw',
-        maxWidth: '700px',
+        top: '-5%',
+        left: '-5%',
+        width: '65vw',
+        height: '65vw',
+        maxWidth: '850px',
+        maxHeight: '850px',
         borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(55,35,120,0.10) 0%, transparent 65%)',
+        background: 'radial-gradient(ellipse, rgba(55,38,130,0.16) 0%, rgba(35,25,90,0.08) 40%, transparent 70%)',
         filter: 'blur(70px)',
       }} />
 
-      {/* Horizon line — very faint indigo band across bottom */}
+      {/* Secondary cloud — lower right, deep indigo */}
+      <div style={{
+        position: 'absolute',
+        bottom: '-8%',
+        right: '-8%',
+        width: '55vw',
+        height: '55vw',
+        maxWidth: '750px',
+        maxHeight: '750px',
+        borderRadius: '50%',
+        background: 'radial-gradient(ellipse, rgba(25,30,110,0.14) 0%, rgba(15,20,75,0.07) 42%, transparent 70%)',
+        filter: 'blur(65px)',
+      }} />
+
+      {/* Distant cluster glow — mid-right, cooler purple */}
+      <div style={{
+        position: 'absolute',
+        top: '35%',
+        right: '5%',
+        width: '30vw',
+        height: '30vw',
+        maxWidth: '450px',
+        maxHeight: '450px',
+        borderRadius: '50%',
+        background: 'radial-gradient(ellipse, rgba(75,40,130,0.10) 0%, transparent 68%)',
+        filter: 'blur(45px)',
+      }} />
+
+      {/* Bottom horizon depth — very faint warm undertone */}
       <div style={{
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        height: '30vh',
-        background: 'linear-gradient(to top, rgba(30,20,80,0.12) 0%, transparent 100%)',
+        height: '35vh',
+        background: 'linear-gradient(to top, rgba(20,15,55,0.18) 0%, transparent 100%)',
       }} />
     </div>
   )

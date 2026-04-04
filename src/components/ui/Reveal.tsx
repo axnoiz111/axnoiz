@@ -11,7 +11,8 @@ interface RevealProps {
 
 export default function Reveal({ children, delay = 0, y = 18, className, style }: RevealProps) {
   const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-60px' })
+  // once: false → re-triggers every time element enters the viewport
+  const inView = useInView(ref, { once: false, margin: '-60px' })
 
   return (
     <motion.div
@@ -19,8 +20,8 @@ export default function Reveal({ children, delay = 0, y = 18, className, style }
       className={className}
       style={style}
       initial={{ opacity: 0, y }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 1, delay, ease: 'easeOut' }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
+      transition={{ duration: 0.9, delay: inView ? delay : 0, ease: 'easeOut' }}
     >
       {children}
     </motion.div>
