@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   signInWithEmail: (email: string, password: string) => Promise<void>
-  signUpWithEmail: (email: string, password: string) => Promise<{ sessionCreated: boolean }>
+  signUpWithEmail: (email: string, password: string) => Promise<{ sessionCreated: boolean; alreadyExists: boolean }>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -50,8 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     })
     if (error) throw error
-    // Return whether a session was created immediately (email confirmation disabled)
-    return { sessionCreated: !!data.session }
+    // Supabase returns identities: [] when email is already registered (user_repeated_signup)
+    const alreadyExists = (data.user?.identities?.length ?? 1) === 0
+    return { sessionCreated: !!data.session, alreadyExists }
   }
 
   const signInWithGoogle = async () => {

@@ -87,8 +87,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         await signInWithEmail(email, password)
         goSuccess()
       } else {
-        const { sessionCreated } = await signUpWithEmail(email, password)
-        if (sessionCreated) {
+        const { sessionCreated, alreadyExists } = await signUpWithEmail(email, password)
+        if (alreadyExists) {
+          // Account already confirmed — guide user to sign in
+          switchMode('signin')
+          setError('Account already exists. Sign in with your password.')
+        } else if (sessionCreated) {
           goSuccess()
         } else {
           setStep('check_inbox')
