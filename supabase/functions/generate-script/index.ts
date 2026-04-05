@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -68,12 +67,12 @@ serve(async (req) => {
       )
     }
 
-    // Call Gemini via SDK
+    // Call Gemini via direct fetch (v1beta — stable, no SDK dep)
     const geminiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!geminiKey) return new Response('Gemini key not configured', { status: 500, headers: CORS })
-
-    const genAI = new GoogleGenerativeAI(geminiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    if (!geminiKey) return new Response(
+      JSON.stringify({ error: 'Gemini key not configured' }),
+      { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } }
+    )
 
     const prompt = buildPrompt(
       desire.trim(),
@@ -82,8 +81,29 @@ serve(async (req) => {
       current_situation ?? '',
     )
 
-    const result = await model.generateContent(`${SYSTEM_PROMPT}\n\n${prompt}`)
-    const raw = result.response.text()
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.85, maxOutputTokens: 300 },
+        }),
+      }
+    )
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text()
+      return new Response(
+        JSON.stringify({ error: `Gemini error ${geminiRes.status}: ${errText}` }),
+        { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const geminiData = await geminiRes.json()
+    const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
     const parsed = JSON.parse(cleaned)
 

@@ -224,7 +224,15 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
           current_situation: currentReality || undefined,
         },
       })
-      if (fnErr) throw fnErr
+      if (fnErr) {
+        // Extract actual error body from edge function response
+        let msg = fnErr.message ?? 'Something went wrong. Please try again.'
+        try {
+          const body = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.()
+          if (body?.error) msg = body.error
+        } catch { /* ignore parse failure */ }
+        throw new Error(msg)
+      }
       if (data?.error) throw new Error(data.error)
 
       setGeneratedScript(data)
