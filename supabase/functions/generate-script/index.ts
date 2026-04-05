@@ -68,7 +68,7 @@ serve(async (req) => {
     }
 
     // Call Gemini via direct fetch (v1beta — stable, no SDK dep)
-    const geminiKey = Deno.env.get('GEMINI_API_KEY')
+    const geminiKey = Deno.env.get('GEMINI_API_KEY') ?? Deno.env.get('VITE_GEMINI_API_KEY')
     if (!geminiKey) return new Response(
       JSON.stringify({ error: 'Gemini key not configured' }),
       { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } }
