@@ -5,6 +5,7 @@ import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import ResetPassword from './pages/ResetPassword'
+import CompleteProfile from './pages/CompleteProfile'
 import './index.css'
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
         </Routes>

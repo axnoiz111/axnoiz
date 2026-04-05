@@ -113,7 +113,11 @@ export default function Dashboard() {
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
-        setProfileName(data?.full_name ?? null)
+        if (!data?.full_name) {
+          navigate('/complete-profile', { replace: true })
+          return
+        }
+        setProfileName(data.full_name)
         setLoadingProfile(false)
       })
   }, [user])
