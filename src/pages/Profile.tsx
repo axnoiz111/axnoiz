@@ -58,7 +58,7 @@ export default function Profile() {
       setError(err.message)
     } else {
       setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
+      setTimeout(() => navigate('/dashboard'), 1200)
     }
   }
 
