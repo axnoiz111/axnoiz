@@ -1,27 +1,38 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SYSTEM_PROMPT = `You are a subconscious conditioning specialist trained in the principles of Dr. Joseph Murphy (The Power of Your Subconscious Mind), Napoleon Hill (Think and Grow Rich), and Rhonda Byrne (The Secret).
+const MONTHS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+]
 
-Create a powerful personal affirmation script for the desire given to you.
+const SYSTEM_PROMPT = `You are an affirmation script writer grounded in Dr. Joseph Murphy, Napoleon Hill, and Rhonda Byrne.
 
-Requirements:
-- 200–280 words, first person, present tense ("I am", "I have", "I attract")
-- Emotionally charged — the reader should feel conviction, not just read words
-- Weave in all three approaches naturally:
-  * Murphy: "My subconscious mind now..." (subconscious speaks directly to the deeper mind)
-  * Hill: definiteness of purpose, burning desire, persistence that cannot be broken
-  * Byrne: gratitude, "I attract", "The universe responds..."
-- Flow naturally and beautifully when read aloud, like poetry of purpose
-- End with a powerful closing affirmation of certainty and completion
-- Generate a short evocative title (3–6 words)
+Write a personal affirmation script of 100–120 words. Rules:
+- First person, present tense only ("I am", "I have", "I attract")
+- Murphy: address the subconscious directly ("My subconscious mind now...")
+- Hill: burning desire, certainty, persistence
+- Byrne: gratitude and trust ("I am grateful", "The universe provides...")
+- If TARGET DATE given: state it with certainty ("By [month] [year]...")
+- If CURRENT SITUATION given: bridge from it toward the desire
+- Every sentence must feel personal to THIS desire — never generic
+- Close with one powerful sentence of absolute certainty
+- Title: 3–5 evocative words
 
-Return ONLY valid JSON with no markdown: { "title": "...", "content": "..." }`
+Return ONLY valid JSON: {"title":"...","content":"..."}`
+
+function buildPrompt(desire: string, month: string, year: string, reality: string): string {
+  let p = `DESIRE: ${desire}`
+  if (month && year) p += `\nTARGET DATE: ${MONTHS[+month - 1]} ${year}`
+  if (reality?.trim()) p += `\nCURRENT SITUATION: ${reality}`
+  return p
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
@@ -41,8 +52,8 @@ serve(async (req) => {
     )
     if (authErr || !user) return new Response('Unauthorized', { status: 401, headers: CORS })
 
-    const { goal } = await req.json()
-    if (!goal?.trim()) return new Response('goal is required', { status: 400, headers: CORS })
+    const { desire, deadline_month, deadline_year, current_situation } = await req.json()
+    if (!desire?.trim()) return new Response('desire is required', { status: 400, headers: CORS })
 
     // Enforce 10-script limit
     const { count } = await supabase
@@ -57,37 +68,33 @@ serve(async (req) => {
       )
     }
 
-    // Call OpenAI
-    const openaiKey = Deno.env.get('OPENAI_API_KEY')
-    if (!openaiKey) return new Response('OpenAI key not configured', { status: 500, headers: CORS })
+    // Call Gemini via SDK
+    const geminiKey = Deno.env.get('GEMINI_API_KEY')
+    if (!geminiKey) return new Response('Gemini key not configured', { status: 500, headers: CORS })
 
-    const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `My desire: ${goal.trim()}` },
-        ],
-        temperature: 0.85,
-        max_tokens: 600,
-        response_format: { type: 'json_object' },
-      }),
-    })
+    const genAI = new GoogleGenerativeAI(geminiKey)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
-    if (!aiRes.ok) throw new Error(`OpenAI error: ${await aiRes.text()}`)
-    const aiJson = await aiRes.json()
-    const parsed = JSON.parse(aiJson.choices[0].message.content)
+    const prompt = buildPrompt(
+      desire.trim(),
+      deadline_month ?? '',
+      deadline_year ?? '',
+      current_situation ?? '',
+    )
+
+    const result = await model.generateContent(`${SYSTEM_PROMPT}\n\n${prompt}`)
+    const raw = result.response.text()
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+    const parsed = JSON.parse(cleaned)
 
     // Auto-save to database
     const { data: script, error: dbErr } = await supabase
       .from('scripts')
       .insert({
-        user_id: user.id,
-        goal_text: goal.trim(),
-        title: parsed.title,
-        content: parsed.content,
+        user_id:   user.id,
+        goal_text: desire.trim(),
+        title:     parsed.title,
+        content:   parsed.content,
       })
       .select('id, title, content, goal_text, created_at')
       .single()

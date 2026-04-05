@@ -4,25 +4,6 @@ import { ChevronDown, ChevronUp, Trash2, Headphones, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 
-const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string
-
-async function generateAudio(text: string): Promise<Blob> {
-  const res = await fetch('https://api.openai.com/v1/audio/speech', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'tts-1-hd',
-      voice: 'nova',   // warm, calm, intimate — like speaking to yourself
-      input: text,
-      speed: 0.92,     // slightly slower for deeper absorption
-    }),
-  })
-  if (!res.ok) throw new Error(`TTS error: ${res.status} ${await res.text()}`)
-  return res.blob()
-}
 
 const S = {
   card: 'rgba(8,18,34,0.7)',
@@ -100,35 +81,11 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
     setConvertingId(script.id)
 
     try {
-      // 1. Generate audio via OpenAI TTS
-      const audioBlob = await generateAudio(script.content)
-
-      // 2. Upload to Supabase Storage
-      const audioId = crypto.randomUUID()
-      const storagePath = `${user.id}/${audioId}.mp3`
-
-      const { error: uploadErr } = await supabase.storage
-        .from('audio-files')
-        .upload(storagePath, audioBlob, { contentType: 'audio/mpeg', upsert: false })
-
-      if (uploadErr) throw uploadErr
-
-      // Estimate duration: tts-1-hd at ~24kbps ≈ 3000 bytes/sec
-      const durationSeconds = Math.round(audioBlob.size / 3000)
-
-      // 3. Save record to database
-      const { error: dbErr } = await supabase
-        .from('audio_files')
-        .insert({
-          id: audioId,
-          user_id: user.id,
-          script_id: script.id,
-          script_title: script.title,
-          storage_path: storagePath,
-          duration_seconds: durationSeconds,
-        })
-
-      if (dbErr) throw dbErr
+      const { data, error: fnErr } = await supabase.functions.invoke('generate-audio', {
+        body: { script_id: script.id, text: script.content },
+      })
+      if (fnErr) throw fnErr
+      if (data?.error) throw new Error(data.error)
 
       setAudioScriptIds(prev => new Set([...prev, script.id]))
       setAudioCount(c => c + 1)
