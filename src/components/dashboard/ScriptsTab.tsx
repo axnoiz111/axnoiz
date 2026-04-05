@@ -1,0 +1,309 @@
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronDown, ChevronUp, Trash2, Headphones, Check } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
+
+const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string
+
+async function generateAudio(text: string): Promise<Blob> {
+  const res = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'tts-1-hd',
+      voice: 'nova',   // warm, calm, intimate — like speaking to yourself
+      input: text,
+      speed: 0.92,     // slightly slower for deeper absorption
+    }),
+  })
+  if (!res.ok) throw new Error(`TTS error: ${res.status} ${await res.text()}`)
+  return res.blob()
+}
+
+const S = {
+  card: 'rgba(8,18,34,0.7)',
+  border: 'rgba(255,255,255,0.07)',
+  text: '#C8D4F0',
+  muted: '#6A7A9A',
+  dim: '#2E3D5A',
+}
+
+interface Script {
+  id: string
+  title: string
+  content: string
+  goal_text: string
+  created_at: string
+}
+
+interface AudioFile {
+  script_id: string | null
+}
+
+interface Props {
+  scripts: Script[]
+  onScriptsChange: (scripts: Script[]) => void
+  onAudioGenerated: () => void
+}
+
+export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated }: Props) {
+  const { user } = useAuth()
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [convertingId, setConvertingId] = useState<string | null>(null)
+  const [audioScriptIds, setAudioScriptIds] = useState<Set<string>>(new Set())
+  const [audioCount, setAudioCount] = useState(0)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('audio_files')
+      .select('script_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data) {
+          const ids = new Set(data.map((a: AudioFile) => a.script_id).filter(Boolean) as string[])
+          setAudioScriptIds(ids)
+          setAudioCount(data.length)
+        }
+      })
+  }, [user])
+
+  const handleDelete = async (id: string) => {
+    if (!user) return
+    setDeletingId(id)
+    const { error: err } = await supabase
+      .from('scripts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
+
+    setDeletingId(null)
+    if (!err) {
+      onScriptsChange(scripts.filter(s => s.id !== id))
+      if (expandedId === id) setExpandedId(null)
+    }
+  }
+
+  const handleConvertToAudio = async (script: Script) => {
+    if (!user) return
+    if (audioCount >= 5) {
+      setError('You have 5 audio files saved. Delete one from the Audio tab to generate a new one.')
+      return
+    }
+    setError('')
+    setConvertingId(script.id)
+
+    try {
+      // 1. Generate audio via OpenAI TTS
+      const audioBlob = await generateAudio(script.content)
+
+      // 2. Upload to Supabase Storage
+      const audioId = crypto.randomUUID()
+      const storagePath = `${user.id}/${audioId}.mp3`
+
+      const { error: uploadErr } = await supabase.storage
+        .from('audio-files')
+        .upload(storagePath, audioBlob, { contentType: 'audio/mpeg', upsert: false })
+
+      if (uploadErr) throw uploadErr
+
+      // Estimate duration: tts-1-hd at ~24kbps ≈ 3000 bytes/sec
+      const durationSeconds = Math.round(audioBlob.size / 3000)
+
+      // 3. Save record to database
+      const { error: dbErr } = await supabase
+        .from('audio_files')
+        .insert({
+          id: audioId,
+          user_id: user.id,
+          script_id: script.id,
+          script_title: script.title,
+          storage_path: storagePath,
+          duration_seconds: durationSeconds,
+        })
+
+      if (dbErr) throw dbErr
+
+      setAudioScriptIds(prev => new Set([...prev, script.id]))
+      setAudioCount(c => c + 1)
+      onAudioGenerated()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to generate audio. Please try again.')
+    } finally {
+      setConvertingId(null)
+    }
+  }
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+  if (scripts.length === 0) {
+    return (
+      <div style={{ padding: '40px 28px' }}>
+        <div style={{
+          border: '1px dashed rgba(255,255,255,0.07)',
+          borderRadius: '14px', padding: '56px 24px',
+          textAlign: 'center',
+        }}>
+          <p style={{ fontSize: '15px', color: '#8A9ABE', marginBottom: '8px' }}>No scripts yet.</p>
+          <p style={{ fontSize: '13px', color: S.dim, lineHeight: 1.7 }}>
+            Go to Home and tell the system what you desire.<br />Your script will appear here automatically.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: '28px 28px 120px', maxWidth: '720px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '17px', color: '#C8D4F0', fontWeight: 400 }}>Your Scripts</h2>
+        <span style={{
+          fontSize: '11px', color: S.dim,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          padding: '3px 10px', borderRadius: '9999px',
+          letterSpacing: '0.07em',
+        }}>
+          {scripts.length} / 10
+        </span>
+      </div>
+
+      {error && (
+        <p style={{ fontSize: '12px', color: '#CC6666', marginBottom: '14px' }}>{error}</p>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {[...scripts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((script, i) => (
+          <motion.div
+            key={script.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            style={{
+              background: S.card,
+              border: `1px solid ${S.border}`,
+              borderRadius: '12px',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header row */}
+            <div
+              onClick={() => setExpandedId(expandedId === script.id ? null : script.id)}
+              style={{
+                padding: '14px 16px', cursor: 'pointer',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                gap: '12px',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '14px', color: S.text, marginBottom: '4px' }}>
+                  {script.title}
+                </p>
+                <p style={{ fontSize: '11px', color: S.dim }}>
+                  {formatDate(script.created_at)} · {script.goal_text.slice(0, 52)}{script.goal_text.length > 52 ? '…' : ''}
+                </p>
+              </div>
+              {expandedId === script.id
+                ? <ChevronUp size={15} color={S.dim} style={{ flexShrink: 0 }} />
+                : <ChevronDown size={15} color={S.dim} style={{ flexShrink: 0 }} />
+              }
+            </div>
+
+            {/* Expanded content */}
+            <AnimatePresence>
+              {expandedId === script.id && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.26 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div style={{ padding: '0 16px 16px' }}>
+                    <div style={{
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      marginBottom: '12px',
+                      maxHeight: '240px',
+                      overflowY: 'auto',
+                    }}>
+                      <p style={{
+                        fontSize: '14px', color: '#9AAAC8',
+                        lineHeight: 1.9, whiteSpace: 'pre-wrap',
+                        fontFamily: 'Georgia, serif',
+                      }}>
+                        {script.content}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {audioScriptIds.has(script.id) ? (
+                        <div style={{
+                          flex: 1, padding: '10px',
+                          background: 'rgba(76,175,130,0.07)',
+                          border: '1px solid rgba(76,175,130,0.15)',
+                          borderRadius: '8px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        }}>
+                          <Check size={13} color="#4CAF82" />
+                          <span style={{ fontSize: '12px', color: '#4CAF82' }}>Audio ready</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleConvertToAudio(script)}
+                          disabled={convertingId === script.id || audioCount >= 5}
+                          style={{
+                            flex: 1, padding: '10px',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: '8px',
+                            color: S.muted, fontSize: '12px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                            cursor: convertingId === script.id ? 'wait' : 'pointer',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          <Headphones size={13} />
+                          {convertingId === script.id ? 'Generating...' : 'Convert to Audio'}
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleDelete(script.id)}
+                        disabled={deletingId === script.id}
+                        style={{
+                          padding: '10px 14px',
+                          background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                          borderRadius: '8px',
+                          color: S.dim, cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          opacity: deletingId === script.id ? 0.4 : 1,
+                          transition: 'color 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#CC6666'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = S.dim}
+                        title="Delete script"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}

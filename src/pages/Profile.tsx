@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowRight, User, Calendar, Phone } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import UniverseBackground from '../components/ui/UniverseBackground'
+
+const GENDERS = [
+  { value: 'male',   label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'other',  label: 'Other' },
+]
 
 export default function Profile() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  const [age, setAge] = useState('')
-  const [gender, setGender] = useState('')
-  const [whatsapp, setWhatsapp] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState('')
+  const [fullName,  setFullName]  = useState('')
+  const [age,       setAge]       = useState('')
+  const [gender,    setGender]    = useState('')
+  const [whatsapp,  setWhatsapp]  = useState('')
+  const [loading,   setLoading]   = useState(true)
+  const [saving,    setSaving]    = useState(false)
+  const [error,     setError]     = useState('')
+  const [isFirstTime, setIsFirstTime] = useState(false)
 
-  // Load existing profile on mount
   useEffect(() => {
     if (!user) return
     supabase
@@ -31,6 +38,9 @@ export default function Profile() {
           setAge(data.age ? String(data.age) : '')
           setGender(data.gender ?? '')
           setWhatsapp(data.whatsapp ?? '')
+          setIsFirstTime(!data.full_name)
+        } else {
+          setIsFirstTime(true)
         }
         setLoading(false)
       })
@@ -39,129 +49,235 @@ export default function Profile() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
+    if (!fullName.trim()) { setError('Please enter your name.'); return }
+
     setSaving(true)
     setError('')
 
-    const { error: err } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        email: user.email,
-        full_name: fullName || null,
-        age: age ? parseInt(age) : null,
-        gender: gender || null,
-        whatsapp: whatsapp || null,
-      })
+    const { error: err } = await supabase.from('profiles').upsert({
+      id:        user.id,
+      email:     user.email,
+      full_name: fullName.trim(),
+      age:       age ? parseInt(age) : null,
+      gender:    gender || null,
+      whatsapp:  whatsapp || null,
+    })
 
     setSaving(false)
     if (err) {
       setError(err.message)
     } else {
-      setSaved(true)
-      setTimeout(() => navigate('/dashboard'), 1200)
+      navigate('/dashboard', { replace: true })
     }
   }
 
   if (loading) {
     return (
-      <div style={{ height: '100svh', background: '#020409', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-        Loading...
+      <div style={{ height: '100svh', background: '#050A18', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <UniverseBackground />
+        </div>
+        <p style={{ position: 'relative', zIndex: 1, fontSize: '13px', color: '#4A5A7A', letterSpacing: '0.1em' }}>Loading...</p>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100svh', background: '#020409', color: 'var(--text-bright)', padding: '40px' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '60px' }}>
-        <h1 className="font-display" style={{ fontSize: '32px' }}>Your Profile</h1>
-        <button className="btn" onClick={() => navigate('/dashboard')} style={{ background: 'transparent', border: '1px solid var(--border)' }}>
-          Back to Dashboard
-        </button>
-      </header>
+    <div style={{ minHeight: '100svh', background: '#050A18', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative' }}>
 
-      <div style={{ maxWidth: '420px', margin: '0 auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <UniverseBackground />
+      </div>
 
-        {/* Email (read-only) */}
-        <div style={{ marginBottom: '28px', padding: '16px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '10px' }}>
-          <p style={{ fontSize: '10px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px' }}>Account</p>
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{user?.email}</p>
-        </div>
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '440px' }}>
 
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+          style={{ textAlign: 'center', marginBottom: '40px' }}
+        >
+          <p style={{ fontSize: '11px', color: '#4A5A7A', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '16px' }}>
+            {isFirstTime ? 'Welcome to Axnoiz' : 'Your Account'}
+          </p>
+          <h1 className="font-display" style={{ fontSize: '38px', color: '#F0F4FF', fontWeight: 300, lineHeight: 1.2, marginBottom: '14px' }}>
+            {isFirstTime ? 'Before we begin.' : 'Your Profile.'}
+          </h1>
+          <p style={{ fontSize: '14px', color: '#8B9DC3', lineHeight: 1.8, maxWidth: '320px', margin: '0 auto' }}>
+            {isFirstTime
+              ? 'Tell us a little about yourself so we can personalise your experience.'
+              : 'Update your details anytime.'}
+          </p>
+        </motion.div>
 
-          <div>
-            <label style={labelStyle}>Full Name</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
-              placeholder="Your name"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.07)'}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Age</label>
-            <input
-              type="number"
-              value={age}
-              onChange={e => setAge(e.target.value)}
-              placeholder="Your age"
-              min="1" max="120"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.07)'}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Gender</label>
-            <select
-              value={gender}
-              onChange={e => setGender(e.target.value)}
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.07)'}
-            >
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label style={labelStyle}>WhatsApp Number</label>
-            <input
-              type="tel"
-              value={whatsapp}
-              onChange={e => setWhatsapp(e.target.value)}
-              placeholder="+91 98765 43210"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.07)'}
-            />
-            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px' }}>Used for weekly progress reports.</p>
-          </div>
-
-          {error && (
-            <p style={{ fontSize: '12px', color: '#e07070', textAlign: 'center' }}>{error}</p>
+        {/* Form card */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
+          style={{
+            background: '#0A1628',
+            border: '1px solid rgba(108,99,255,0.12)',
+            borderRadius: '20px',
+            padding: '32px 28px',
+            boxShadow: '0 0 60px rgba(108,99,255,0.07)',
+          }}
+        >
+          {/* Email (read-only) */}
+          {!isFirstTime && (
+            <div style={{ marginBottom: '20px', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '10px', color: '#4A5A7A', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '3px' }}>Account</p>
+              <p style={{ fontSize: '13px', color: '#6A7A9A' }}>{user?.email}</p>
+            </div>
           )}
 
-          <button
-            className="btn"
-            type="submit"
-            disabled={saving}
-            style={{ justifyContent: 'center', marginTop: '8px', opacity: saving ? 0.6 : 1 }}
-          >
-            {saved ? (
-              <><Check size={14} /> Saved</>
-            ) : saving ? 'Saving...' : 'Save Profile'}
-          </button>
+          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-        </form>
+            {/* Name */}
+            <div>
+              <label style={labelStyle}>Your name <span style={{ color: '#6C63FF' }}>*</span></label>
+              <div style={{ position: 'relative' }}>
+                <User size={15} style={iconStyle} />
+                <input
+                  type="text" required autoFocus={isFirstTime}
+                  placeholder="e.g. Arjun Sharma"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  style={{ ...inputStyle, paddingLeft: '42px' }}
+                  onFocus={e => e.target.style.borderColor = '#6C63FF'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(108,99,255,0.12)'}
+                />
+              </div>
+            </div>
+
+            {/* Age */}
+            <div>
+              <label style={labelStyle}>Age</label>
+              <div style={{ position: 'relative' }}>
+                <Calendar size={15} style={iconStyle} />
+                <input
+                  type="number" min="1" max="120"
+                  placeholder="Your age"
+                  value={age}
+                  onChange={e => setAge(e.target.value)}
+                  style={{ ...inputStyle, paddingLeft: '42px' }}
+                  onFocus={e => e.target.style.borderColor = '#6C63FF'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(108,99,255,0.12)'}
+                />
+              </div>
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label style={labelStyle}>Gender</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {GENDERS.map(g => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setGender(g.value)}
+                    style={{
+                      flex: 1, padding: '11px 8px',
+                      background: gender === g.value ? 'rgba(108,99,255,0.18)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${gender === g.value ? '#6C63FF' : 'rgba(108,99,255,0.12)'}`,
+                      borderRadius: '8px',
+                      color: gender === g.value ? '#F0F4FF' : '#8B9DC3',
+                      fontSize: '13px', cursor: 'pointer',
+                      transition: 'all 0.18s',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* WhatsApp */}
+            <div>
+              <label style={labelStyle}>WhatsApp number <span style={{ color: '#4A5A7A', fontSize: '10px' }}>(optional)</span></label>
+              <div style={{ position: 'relative' }}>
+                <Phone size={15} style={iconStyle} />
+                <input
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  value={whatsapp}
+                  onChange={e => setWhatsapp(e.target.value)}
+                  style={{ ...inputStyle, paddingLeft: '42px' }}
+                  onFocus={e => e.target.style.borderColor = '#6C63FF'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(108,99,255,0.12)'}
+                />
+              </div>
+              <p style={{ fontSize: '11px', color: '#4A5A7A', marginTop: '5px' }}>For weekly progress reports.</p>
+            </div>
+
+            <AnimatePresence>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ color: '#FF6B6B', fontSize: '12px', textAlign: 'center' }}
+                >
+                  {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            <motion.button
+              whileHover={{ scale: 1.015 }}
+              whileTap={{ scale: 0.97 }}
+              type="submit"
+              disabled={saving}
+              style={{
+                marginTop: '6px',
+                width: '100%', padding: '16px',
+                background: saving ? 'rgba(108,99,255,0.4)' : 'linear-gradient(135deg, #6C63FF, #8B83FF)',
+                border: 'none', borderRadius: '10px',
+                color: '#fff', fontSize: '13px',
+                fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                cursor: saving ? 'not-allowed' : 'pointer',
+                boxShadow: saving ? 'none' : '0 0 28px rgba(108,99,255,0.45)',
+                transition: 'box-shadow 0.2s',
+                fontFamily: 'inherit',
+              }}
+            >
+              {saving ? 'Saving...' : isFirstTime ? 'Begin My Journey' : 'Save Changes'}
+              {!saving && <ArrowRight size={15} />}
+            </motion.button>
+
+            {!isFirstTime && (
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard')}
+                style={{
+                  background: 'none', border: 'none',
+                  color: '#4A5A7A', fontSize: '12px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  textAlign: 'center', padding: '4px',
+                }}
+              >
+                ← Back to Dashboard
+              </button>
+            )}
+
+          </form>
+        </motion.div>
+
+        {isFirstTime && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            style={{ textAlign: 'center', fontSize: '12px', color: '#4A5A7A', marginTop: '28px', lineHeight: 1.7, fontStyle: 'italic' }}
+          >
+            "The first step toward success is taken when you refuse to be a captive of the environment in which you find yourself."<br />
+            <span style={{ fontSize: '11px', letterSpacing: '0.06em' }}>— Mark Caine</span>
+          </motion.p>
+        )}
+
       </div>
     </div>
   )
@@ -170,7 +286,7 @@ export default function Profile() {
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '11px',
-  color: 'var(--text-dim)',
+  color: '#4A5A7A',
   textTransform: 'uppercase',
   letterSpacing: '0.1em',
   marginBottom: '8px',
@@ -179,13 +295,21 @@ const labelStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   background: 'rgba(255,255,255,0.03)',
-  border: '1px solid rgba(255,255,255,0.07)',
+  border: '1px solid rgba(108,99,255,0.12)',
   padding: '13px 16px',
   borderRadius: '8px',
-  color: 'var(--text-bright)',
+  color: '#F0F4FF',
   fontSize: '14px',
   outline: 'none',
   transition: 'border-color 0.2s',
   boxSizing: 'border-box',
   fontFamily: 'inherit',
+}
+
+const iconStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: '50%', left: '14px',
+  transform: 'translateY(-50%)',
+  color: '#4A5A7A',
+  pointerEvents: 'none',
 }

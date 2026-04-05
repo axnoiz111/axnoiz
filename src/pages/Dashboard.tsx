@@ -1,37 +1,31 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Home, Play, BarChart2, User, Flame, ChevronRight, Sparkles } from 'lucide-react'
+import { Home, FileText, Headphones, BarChart2, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import UniverseBackground from '../components/ui/UniverseBackground'
+import DailyThoughtModal, { shouldShowDailyThought, markDailyThoughtSeen } from '../components/dashboard/DailyThoughtModal'
+import HomeTab from '../components/dashboard/HomeTab'
+import ScriptsTab from '../components/dashboard/ScriptsTab'
+import AudioTab from '../components/dashboard/AudioTab'
+import TrackerTab from '../components/dashboard/TrackerTab'
 
-// ── Design tokens ──────────────────────────────────────────────────
-const C = {
-  bg:       '#050A18',
-  card:     '#0A1628',
-  elevated: '#0F1F3D',
-  violet:   '#6C63FF',
-  cyan:     '#00D4FF',
-  amber:    '#FFB347',
-  text:     '#F0F4FF',
-  muted:    '#8B9DC3',
-  dim:      '#4A5A7A',
-  border:   'rgba(108, 99, 255, 0.12)',
-  glow:     '0 0 40px rgba(108, 99, 255, 0.08)',
-}
+type Tab = 'home' | 'scripts' | 'audio' | 'tracker'
 
-// ── Helpers ─────────────────────────────────────────────────────────
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
-  return 'Good evening'
-}
+const NAV_ITEMS: { id: Tab; icon: typeof Home; label: string }[] = [
+  { id: 'home',    icon: Home,       label: 'Home' },
+  { id: 'scripts', icon: FileText,   label: 'Scripts' },
+  { id: 'audio',   icon: Headphones, label: 'Audio' },
+  { id: 'tracker', icon: BarChart2,  label: 'Tracker' },
+]
 
-function getFirstName(fullName: string | null, email: string) {
-  if (fullName?.trim()) return fullName.trim().split(' ')[0]
-  return email.split('@')[0]
+interface Script {
+  id: string
+  title: string
+  content: string
+  goal_text: string
+  created_at: string
 }
 
 function getInitials(fullName: string | null, email: string) {
@@ -44,66 +38,17 @@ function getInitials(fullName: string | null, email: string) {
   return email[0].toUpperCase()
 }
 
-function formatToday() {
-  return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-}
-
-// Last 14 days for streak calendar (placeholder — will be filled once sessions are implemented)
-function buildCalendar() {
-  return Array.from({ length: 14 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (13 - i))
-    return { date: d, complete: false, isToday: i === 13 }
-  })
-}
-
-// ── Bottom Nav Item ──────────────────────────────────────────────────
-function NavItem({ icon: Icon, label, active, onClick }: { icon: any; label: string; active?: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-        background: 'none', border: 'none', cursor: 'pointer',
-        color: active ? C.violet : C.dim,
-        padding: '12px 0',
-        transition: 'color 0.2s',
-      }}
-    >
-      <Icon size={20} />
-      <span style={{ fontSize: '10px', letterSpacing: '0.06em' }}>{label}</span>
-    </button>
-  )
-}
-
-// ── Card wrapper ─────────────────────────────────────────────────────
-function Card({ children, style = {}, accentColor }: { children: React.ReactNode; style?: React.CSSProperties; accentColor?: string }) {
-  return (
-    <div style={{
-      background: C.card,
-      border: `1px solid ${C.border}`,
-      borderRadius: '16px',
-      padding: '20px',
-      boxShadow: C.glow,
-      borderLeft: accentColor ? `3px solid ${accentColor}` : `1px solid ${C.border}`,
-      ...style,
-    }}>
-      {children}
-    </div>
-  )
-}
-
-// ── Main Component ───────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
 
+  const [tab, setTab] = useState<Tab>('home')
   const [profileName, setProfileName] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(true)
-
-  const streak = 0 // Will be live when sessions are built
-  const sessionComplete = false // Will be live when sessions are built
-  const calendar = buildCalendar()
+  const [showDailyThought, setShowDailyThought] = useState(false)
+  const [scripts, setScripts] = useState<Script[]>([])
+  const [audioRefreshKey, setAudioRefreshKey] = useState(0)
+  const [trackerRefreshKey, setTrackerRefreshKey] = useState(0)
 
   useEffect(() => {
     if (!user) return
@@ -113,244 +58,239 @@ export default function Dashboard() {
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
-        if (!data?.full_name) {
-          navigate('/complete-profile', { replace: true })
-          return
-        }
+        if (!data?.full_name) { navigate('/complete-profile', { replace: true }); return }
         setProfileName(data.full_name)
         setLoadingProfile(false)
       })
   }, [user])
 
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('scripts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setScripts(data ?? []))
+  }, [user])
+
+  useEffect(() => {
+    if (!loadingProfile && shouldShowDailyThought()) {
+      const t = setTimeout(() => setShowDailyThought(true), 800)
+      return () => clearTimeout(t)
+    }
+  }, [loadingProfile])
+
   if (!user) return null
 
-  const firstName = getFirstName(profileName, user.email!)
-  const initials = getInitials(profileName, user.email!)
+  const initials   = getInitials(profileName, user.email!)
+  const firstName  = profileName?.trim().split(' ')[0] || user.email!.split('@')[0]
+  const displayEmail = user.email!.length > 22 ? user.email!.slice(0, 22) + '…' : user.email!
+
+  const handleSignOut = async () => { await signOut(); navigate('/') }
 
   return (
-    <div style={{ minHeight: '100svh', background: C.bg, color: C.text, position: 'relative', paddingBottom: '80px' }}>
+    <div className="app-layout">
 
-      {/* Stars */}
+      {/* ── Star background (behind everything) ── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
         <UniverseBackground />
       </div>
 
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto', padding: '0 20px' }}>
+      {/* ── Daily thought modal ── */}
+      <DailyThoughtModal
+        visible={showDailyThought}
+        onDismiss={() => { markDailyThoughtSeen(); setShowDailyThought(false) }}
+      />
 
-        {/* ── Header ── */}
-        <header style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '20px 0 8px',
-        }}>
-          <span className="font-display" style={{ fontSize: '22px', color: C.text, letterSpacing: '0.04em' }}>
+      {/* ════════════════════════════════════
+          LEFT SIDEBAR  (desktop only)
+      ════════════════════════════════════ */}
+      <aside className="app-sidebar" style={{ position: 'fixed', zIndex: 40 }}>
+
+        {/* Logo */}
+        <div style={{ padding: '24px 20px 20px' }}>
+          <span className="font-display" style={{ fontSize: '20px', color: '#E8EDF8', letterSpacing: '0.06em' }}>
             AXNOIZ
           </span>
+          <p style={{ fontSize: '10px', color: '#2E3D5A', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: '4px' }}>
+            Access your inner voice
+          </p>
+        </div>
 
-          {/* Profile avatar */}
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.96 }}
+        <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0 16px 16px' }} />
+
+        {/* Nav items */}
+        <nav style={{ flex: 1, padding: '0 10px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {NAV_ITEMS.map(item => {
+            const Icon = item.icon
+            const active = tab === item.id
+            return (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 12px', borderRadius: '8px',
+                  background: active ? 'rgba(108,99,255,0.12)' : 'transparent',
+                  border: 'none', cursor: 'pointer',
+                  color: active ? '#A09AFF' : '#3D5070',
+                  fontSize: '13px', fontFamily: 'inherit',
+                  transition: 'all 0.15s',
+                  width: '100%', textAlign: 'left',
+                }}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              >
+                <Icon size={16} />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        {/* Profile section at bottom */}
+        <div style={{ padding: '12px 10px' }}>
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', marginBottom: '12px' }} />
+
+          <button
             onClick={() => navigate('/profile')}
             style={{
-              width: '40px', height: '40px', borderRadius: '50%',
-              background: `linear-gradient(135deg, ${C.violet}, #9B8FF5)`,
-              border: `2px solid rgba(108,99,255,0.4)`,
-              boxShadow: '0 0 16px rgba(108,99,255,0.35)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#fff',
-              fontSize: '14px', fontWeight: 600, fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '10px 12px', borderRadius: '8px',
+              background: 'transparent', border: 'none',
+              cursor: 'pointer', width: '100%', textAlign: 'left',
+              transition: 'background 0.15s',
             }}
-            title="View Profile"
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
           >
-            {initials}
+            <div style={{
+              width: '30px', height: '30px', borderRadius: '50%',
+              background: 'rgba(108,99,255,0.25)',
+              border: '1px solid rgba(108,99,255,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+              fontSize: '11px', fontWeight: 500, color: '#A09AFF',
+            }}>
+              {loadingProfile ? '…' : initials}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p style={{ fontSize: '12px', color: '#C8D4F0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {loadingProfile ? '…' : firstName}
+              </p>
+              <p style={{ fontSize: '10px', color: '#2E3D5A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {displayEmail}
+              </p>
+            </div>
+          </button>
+
+          <button
+            onClick={handleSignOut}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '9px 12px', borderRadius: '8px',
+              background: 'transparent', border: 'none',
+              cursor: 'pointer', width: '100%', textAlign: 'left',
+              color: '#2E3D5A', fontSize: '12px', fontFamily: 'inherit',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,107,107,0.06)'; (e.currentTarget as HTMLElement).style.color = '#FF6B6B' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#2E3D5A' }}
+          >
+            <LogOut size={14} />
+            <span>Sign out</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ════════════════════════════════════
+          MAIN CONTENT PANEL
+      ════════════════════════════════════ */}
+      <main className="app-main" style={{ position: 'relative', zIndex: 1 }}>
+
+        {/* Mobile header (hidden on desktop via CSS) */}
+        <header style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '16px 20px 0',
+        }}>
+          <span className="font-display" style={{ fontSize: '20px', color: '#E8EDF8', letterSpacing: '0.06em' }}>
+            AXNOIZ
+          </span>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/profile')}
+            style={{
+              width: '34px', height: '34px', borderRadius: '50%',
+              background: 'rgba(108,99,255,0.2)',
+              border: '1px solid rgba(108,99,255,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: '#A09AFF',
+              fontSize: '12px', fontWeight: 500, fontFamily: 'inherit',
+            }}
+          >
+            {loadingProfile ? '…' : initials}
           </motion.button>
         </header>
 
-        {/* ── Greeting ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          style={{ padding: '24px 0 8px' }}
-        >
-          <p style={{ fontSize: '12px', color: C.dim, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
-            {formatToday()}
-          </p>
-          <h1 className="font-display" style={{ fontSize: '32px', color: C.text, fontWeight: 300 }}>
-            {loadingProfile ? `${getGreeting()}.` : `${getGreeting()}, ${firstName}.`}
-          </h1>
-        </motion.div>
+        {/* Tab content */}
+        {tab === 'home' && (
+          <HomeTab
+            profileName={profileName}
+            userEmail={user.email!}
+            scriptCount={scripts.length}
+            onScriptGenerated={s => setScripts(prev => [s, ...prev])}
+            onGoToScripts={() => setTab('scripts')}
+          />
+        )}
+        {tab === 'scripts' && (
+          <ScriptsTab
+            scripts={scripts}
+            onScriptsChange={setScripts}
+            onAudioGenerated={() => setAudioRefreshKey(k => k + 1)}
+          />
+        )}
+        {tab === 'audio' && (
+          <AudioTab
+            refreshKey={audioRefreshKey}
+            onSessionSaved={() => setTrackerRefreshKey(k => k + 1)}
+          />
+        )}
+        {tab === 'tracker' && (
+          <TrackerTab refreshKey={trackerRefreshKey} />
+        )}
+      </main>
 
-        {/* ── Cards ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '20px' }}>
-
-          {/* CARD 1 — Today's Status */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-            <Card accentColor={sessionComplete ? '#4CAF82' : C.violet}>
-              {sessionComplete ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ fontSize: '28px' }}>✅</div>
-                  <div>
-                    <p style={{ fontSize: '15px', fontWeight: 600, color: C.text, marginBottom: '2px' }}>You showed up today.</p>
-                    <p style={{ fontSize: '12px', color: '#4CAF82' }}>Session complete · 🔥 Day {streak}</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '20px' }}>⏳</div>
-                    <p style={{ fontSize: '13px', color: C.muted }}>Your session is waiting.</p>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => navigate('/session')}
-                    style={{
-                      width: '100%', padding: '15px 20px',
-                      background: `linear-gradient(135deg, ${C.violet}, #8B83FF)`,
-                      border: 'none', borderRadius: '10px',
-                      color: '#fff', fontSize: '13px', fontWeight: 600,
-                      letterSpacing: '0.08em', textTransform: 'uppercase',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                      cursor: 'pointer', boxShadow: '0 0 24px rgba(108,99,255,0.4)',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    <Play size={15} fill="white" />
-                    Begin Today's Session
-                    <ChevronRight size={15} />
-                  </motion.button>
-                  <p style={{ fontSize: '11px', color: C.dim, textAlign: 'center', marginTop: '10px' }}>
-                    5 minutes. One step forward.
-                  </p>
-                </>
-              )}
-            </Card>
-          </motion.div>
-
-          {/* CARD 2 — Streak */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.18 }}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Flame size={22} color={C.amber} />
-                  <div>
-                    <p style={{ fontSize: '28px', fontWeight: 700, color: C.text, lineHeight: 1 }}>{streak}</p>
-                    <p style={{ fontSize: '11px', color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Day Streak</p>
-                  </div>
-                </div>
-                {streak === 0 && (
-                  <span style={{
-                    fontSize: '10px', padding: '4px 10px', borderRadius: '9999px',
-                    background: 'rgba(108,99,255,0.12)', color: C.violet,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                  }}>
-                    Start today
-                  </span>
-                )}
-              </div>
-
-              {/* 14-day mini calendar */}
-              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {calendar.map((day, i) => (
-                  <div
-                    key={i}
-                    title={day.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                    style={{
-                      width: '20px', height: '20px', borderRadius: '50%',
-                      background: day.complete
-                        ? C.violet
-                        : day.isToday
-                        ? 'transparent'
-                        : 'rgba(255,255,255,0.04)',
-                      border: day.isToday
-                        ? `2px solid ${C.violet}`
-                        : '2px solid transparent',
-                      boxShadow: day.isToday ? `0 0 8px rgba(108,99,255,0.6)` : 'none',
-                      animation: day.isToday ? 'pulse 2s infinite' : 'none',
-                      flexShrink: 0,
-                    }}
-                  />
-                ))}
-              </div>
-
-              <p style={{ fontSize: '12px', color: C.dim, marginTop: '14px', lineHeight: 1.6 }}>
-                "Every day you show up, you cast a vote for the person you are becoming."
-              </p>
-            </Card>
-          </motion.div>
-
-          {/* CARD 3 — Declared Desire */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.26 }}>
-            <Card accentColor={C.cyan}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <p style={{ fontSize: '10px', color: C.cyan, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                  What you are building
-                </p>
-                <Sparkles size={14} color={C.cyan} />
-              </div>
-              <p style={{ fontSize: '14px', color: C.muted, lineHeight: 1.7, fontStyle: 'italic' }}>
-                You haven't set your goal yet.
-              </p>
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/onboarding')}
-                style={{
-                  marginTop: '14px', width: '100%', padding: '12px 16px',
-                  background: 'rgba(0,212,255,0.08)', border: `1px solid rgba(0,212,255,0.2)`,
-                  borderRadius: '8px', color: C.cyan,
-                  fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase',
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  transition: 'border-color 0.2s',
-                }}
-              >
-                Declare Your Desire →
-              </motion.button>
-            </Card>
-          </motion.div>
-
-          {/* CARD 4 — Philosophy quote */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.34 }}>
-            <div style={{
-              background: C.elevated, borderRadius: '16px', padding: '24px 20px',
-              border: `1px solid rgba(108,99,255,0.15)`,
-              boxShadow: '0 0 60px rgba(108,99,255,0.05)',
-              textAlign: 'center',
-            }}>
-              <p className="font-display-italic" style={{ fontSize: '18px', color: C.text, lineHeight: 1.6, marginBottom: '12px' }}>
-                "Whatever the mind of man can conceive and believe, it can achieve."
-              </p>
-              <p style={{ fontSize: '11px', color: C.dim, letterSpacing: '0.08em' }}>
-                — Napoleon Hill, Think and Grow Rich
-              </p>
-            </div>
-          </motion.div>
-
-        </div>
-      </div>
-
-      {/* ── Bottom Navigation ── */}
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: `rgba(5, 10, 24, 0.92)`,
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderTop: `1px solid ${C.border}`,
-        display: 'flex', zIndex: 50,
-        maxWidth: '480px', margin: '0 auto',
+      {/* ════════════════════════════════════
+          BOTTOM NAV  (mobile only)
+      ════════════════════════════════════ */}
+      <nav className="app-bottom-nav" style={{
+        background: 'rgba(5,13,28,0.96)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
       }}>
-        <NavItem icon={Home}     label="Home"    active onClick={() => navigate('/dashboard')} />
-        <NavItem icon={Play}     label="Session"        onClick={() => navigate('/session')} />
-        <NavItem icon={BarChart2} label="Tracker"       onClick={() => navigate('/tracker')} />
-        <NavItem icon={User}     label="Profile"        onClick={() => navigate('/profile')} />
+        {NAV_ITEMS.map(item => {
+          const Icon = item.icon
+          const active = tab === item.id
+          return (
+            <button
+              key={item.id}
+              onClick={() => setTab(item.id)}
+              style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: active ? '#8B83FF' : '#2E3D5A',
+                padding: '12px 0', transition: 'color 0.2s',
+              }}
+            >
+              <Icon size={19} />
+              <span style={{ fontSize: '10px', letterSpacing: '0.05em' }}>{item.label}</span>
+            </button>
+          )
+        })}
       </nav>
 
-      {/* Pulse keyframe for today dot */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { box-shadow: 0 0 8px rgba(108,99,255,0.6); }
-          50% { box-shadow: 0 0 16px rgba(108,99,255,1); }
-        }
-      `}</style>
     </div>
   )
 }
