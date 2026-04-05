@@ -100,7 +100,7 @@ export default function DailyThoughtModal({ visible, onDismiss }: Props) {
             }} />
 
             <p style={{
-              fontSize: '11px', color: '#4A5A7A',
+              fontSize: '11px', color: 'var(--text-muted)',
               letterSpacing: '0.18em', textTransform: 'uppercase',
               marginBottom: '20px',
             }}>
@@ -115,7 +115,7 @@ export default function DailyThoughtModal({ visible, onDismiss }: Props) {
             </p>
 
             <p style={{
-              fontSize: '12px', color: '#4A5A7A',
+              fontSize: '12px', color: 'var(--text-muted)',
               letterSpacing: '0.06em', marginBottom: '32px',
             }}>
               — {thought.author}

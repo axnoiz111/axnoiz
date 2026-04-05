@@ -246,14 +246,14 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
             padding: '28px 24px',
             marginBottom: '12px',
           }}>
-            <p style={{ fontSize: '10px', color: '#5060A0', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '10px' }}>
+            <p style={{ fontSize: '10px', color: '#7585C0', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '10px' }}>
               Your Script
             </p>
             <h2 className="font-display" style={{ fontSize: '24px', color: '#E8EDF8', fontWeight: 300, marginBottom: '20px' }}>
               {generatedScript.title}
             </h2>
             <p style={{
-              fontSize: '15px', color: '#A8B8D8',
+              fontSize: '15px', color: '#B8C8E8',
               lineHeight: 1.9, whiteSpace: 'pre-wrap',
               fontFamily: 'Georgia, serif',
             }}>
@@ -279,12 +279,12 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <BookOpen size={14} color="#5D7A9A" />
-                <span style={{ fontSize: '12px', color: '#7A9ABE', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                <BookOpen size={14} color="#7DA0BA" />
+                <span style={{ fontSize: '12px', color: '#9ABCE0', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                   How to Use This Script
                 </span>
               </div>
-              {methodOpen ? <ChevronUp size={14} color="#3D5070" /> : <ChevronDown size={14} color="#3D5070" />}
+              {methodOpen ? <ChevronUp size={14} color="#5D7090" /> : <ChevronDown size={14} color="#5D7090" />}
             </button>
 
             <AnimatePresence>
@@ -299,16 +299,16 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
                   <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     {METHOD_STEPS.map(step => (
                       <div key={step.n} style={{ display: 'flex', gap: '14px' }}>
-                        <span style={{ fontSize: '10px', color: '#3D5070', fontWeight: 500, minWidth: '22px', paddingTop: '3px' }}>
+                        <span style={{ fontSize: '10px', color: '#5D7090', fontWeight: 500, minWidth: '22px', paddingTop: '3px' }}>
                           {step.n}
                         </span>
                         <div>
-                          <p style={{ fontSize: '13px', color: '#C8D4F0', marginBottom: '3px' }}>{step.title}</p>
-                          <p style={{ fontSize: '12px', color: '#6A7A9A', lineHeight: 1.6 }}>{step.body}</p>
+                          <p style={{ fontSize: '13px', color: '#D8E4F8', marginBottom: '3px' }}>{step.title}</p>
+                          <p style={{ fontSize: '12px', color: '#8AA0BA', lineHeight: 1.6 }}>{step.body}</p>
                         </div>
                       </div>
                     ))}
-                    <p style={{ fontSize: '11px', color: '#2E3D5A', marginTop: '4px', fontStyle: 'italic' }}>
+                    <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px', fontStyle: 'italic' }}>
                       Based on Dr. Joseph Murphy — The Power of Your Subconscious Mind
                     </p>
                   </div>
@@ -338,10 +338,10 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
               onClick={handleReset}
               style={{
                 padding: '13px 18px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.07)',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '10px',
-                color: '#6A7A9A', fontSize: '12px',
+                color: 'var(--text-muted)', fontSize: '12px',
                 cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
@@ -364,7 +364,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
       >
         {/* Greeting */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <p style={{ fontSize: '11px', color: '#2E3D5A', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '10px' }}>
+          <p style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '10px' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
           <h1 className="font-display" style={{ fontSize: '38px', color: '#D8E4F8', fontWeight: 300, lineHeight: 1.2 }}>
@@ -397,7 +397,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
                       margin: 0,
                       fontSize: '16px',
                       lineHeight: 1.65,
-                      color: '#2C3D5C',
+                      color: 'var(--text-dim)',
                       fontFamily: "'Cormorant Garamond', Georgia, serif",
                       fontStyle: 'italic',
                       fontWeight: 300,
@@ -418,7 +418,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
                   width: '100%',
                   background: 'transparent',
                   border: 'none', outline: 'none',
-                  color: '#C8D4F0',
+                  color: 'var(--text-bright)',
                   fontSize: '15px',
                   lineHeight: 1.65,
                   resize: 'none',
@@ -440,7 +440,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
             </div>{/* end relative wrapper */}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-              <span style={{ fontSize: '11px', color: '#1E2D46', letterSpacing: '0.06em' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '0.06em' }}>
                 Press Enter to generate · Shift+Enter for new line
               </span>
               <motion.button
@@ -453,7 +453,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
                   border: `1px solid ${goal.trim() ? 'rgba(108,99,255,0.4)' : 'rgba(255,255,255,0.06)'}`,
                   cursor: goal.trim() ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: goal.trim() ? '#8B83FF' : '#2E3D5A',
+                  color: goal.trim() ? '#8B83FF' : 'var(--text-dim)',
                   transition: 'all 0.2s',
                   flexShrink: 0,
                 }}
@@ -467,9 +467,12 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
             <p style={{ fontSize: '12px', color: '#CC6666', textAlign: 'center', marginTop: '12px' }}>{error}</p>
           )}
 
-          <p style={{ fontSize: '11px', color: '#1E2D46', textAlign: 'center', marginTop: '14px', letterSpacing: '0.06em' }}>
-            Powered by the principles of Murphy, Hill &amp; Byrne
-          </p>
+          <div style={{ fontSize: '10px', color: 'var(--text-dim)', textAlign: 'center', marginTop: '20px', letterSpacing: '0.08em', lineHeight: 1.8 }}>
+            <p style={{ marginBottom: '6px', fontSize: '11px', fontWeight: 500 }}>Powered by the principles of...</p>
+            <p>The Power Of Your Subconscious Mind - Dr. Joseph Murphy</p>
+            <p>Think And Grow Rich - Napoleon Hill</p>
+            <p>The Secret - Rhonda Byrne</p>
+          </div>
         </form>
       </motion.div>
     </div>

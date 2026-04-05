@@ -94,7 +94,7 @@ function MoodSheet({ audioTitle, audioId, onDone }: MoodSheetProps) {
       <p style={{ fontSize: '15px', color: '#F0F4FF', textAlign: 'center', marginBottom: '4px' }}>
         How do you feel?
       </p>
-      <p style={{ fontSize: '12px', color: '#4A5A7A', textAlign: 'center', marginBottom: '20px' }}>
+      <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '20px' }}>
         After listening to "{audioTitle}"
       </p>
 
@@ -108,7 +108,7 @@ function MoodSheet({ audioTitle, audioId, onDone }: MoodSheetProps) {
               background: mood === m.value ? `${m.color}22` : 'rgba(255,255,255,0.03)',
               border: `1px solid ${mood === m.value ? m.color : 'rgba(255,255,255,0.08)'}`,
               borderRadius: '10px',
-              color: mood === m.value ? m.color : '#8B9DC3',
+              color: mood === m.value ? m.color : 'var(--text-muted)',
               fontSize: '12px', cursor: 'pointer',
               fontFamily: 'inherit',
               transition: 'all 0.15s',
@@ -120,8 +120,8 @@ function MoodSheet({ audioTitle, audioId, onDone }: MoodSheetProps) {
       </div>
 
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ fontSize: '11px', color: '#4A5A7A', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
-          One step you took today <span style={{ color: '#4A5A7A', fontSize: '10px' }}>(optional)</span>
+        <label style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
+          One step you took today <span style={{ color: 'var(--text-dim)', fontSize: '10px' }}>(optional)</span>
         </label>
         <textarea
           value={actionStep}
@@ -148,7 +148,7 @@ function MoodSheet({ audioTitle, audioId, onDone }: MoodSheetProps) {
             flex: 1, padding: '14px',
             background: mood ? 'linear-gradient(135deg, #6C63FF, #8B83FF)' : 'rgba(108,99,255,0.15)',
             border: 'none', borderRadius: '10px',
-            color: mood ? '#fff' : '#4A5A7A',
+            color: mood ? '#fff' : 'var(--text-dim)',
             fontSize: '13px', fontWeight: 600,
             cursor: mood ? 'pointer' : 'not-allowed',
             fontFamily: 'inherit',
@@ -164,7 +164,7 @@ function MoodSheet({ audioTitle, audioId, onDone }: MoodSheetProps) {
             background: 'transparent',
             border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: '10px',
-            color: '#4A5A7A', fontSize: '12px',
+            color: 'var(--text-dim)', fontSize: '12px',
             cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
@@ -322,7 +322,7 @@ function AudioPlayerCard({ audio, onDelete, onSessionSaved }: PlayerProps) {
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '8px', padding: '7px 12px',
-              color: '#5D7A9A', fontSize: '12px',
+              color: 'var(--text-muted)', fontSize: '12px',
               cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
@@ -330,7 +330,7 @@ function AudioPlayerCard({ audio, onDelete, onSessionSaved }: PlayerProps) {
             {LOOP_LABELS[loopMode]}
           </button>
 
-          <span style={{ fontSize: '11px', color: '#4A5A7A', marginLeft: 'auto' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-dim)', marginLeft: 'auto' }}>
             {loopLabel}
           </span>
 
@@ -340,7 +340,7 @@ function AudioPlayerCard({ audio, onDelete, onSessionSaved }: PlayerProps) {
             disabled={deleting}
             style={{
               background: 'none', border: 'none',
-              color: '#4A5A7A', cursor: 'pointer', padding: '4px',
+              color: 'var(--text-dim)', cursor: 'pointer', padding: '4px',
               opacity: deleting ? 0.4 : 1,
             }}
             title="Delete audio"
@@ -405,7 +405,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
 
   if (loading) {
     return (
-      <div style={{ padding: '60px 20px', textAlign: 'center', color: '#4A5A7A', fontSize: '13px' }}>
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '13px' }}>
         Loading...
       </div>
     )
@@ -419,8 +419,8 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
           borderRadius: '14px', padding: '56px 24px',
           textAlign: 'center',
         }}>
-          <p style={{ fontSize: '15px', color: '#8A9ABE', marginBottom: '8px' }}>No audio yet.</p>
-          <p style={{ fontSize: '13px', color: '#2E3D5A', lineHeight: 1.7 }}>
+          <p style={{ fontSize: '15px', color: 'var(--text-muted)', marginBottom: '8px' }}>No audio yet.</p>
+          <p style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.7 }}>
             Go to Scripts and tap "Convert to Audio"<br />on any script to create your first recording.
           </p>
         </div>
@@ -433,7 +433,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '17px', color: '#C8D4F0', fontWeight: 400 }}>Your Audio</h2>
         <span style={{
-          fontSize: '11px', color: '#2E3D5A',
+          fontSize: '11px', color: 'var(--text-dim)',
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.07)',
           padding: '3px 10px', borderRadius: '9999px',
@@ -460,7 +460,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
         ))}
       </div>
 
-      <p style={{ fontSize: '11px', color: '#2E3D5A', textAlign: 'center', marginTop: '28px', lineHeight: 1.7, fontStyle: 'italic' }}>
+      <p style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', marginTop: '28px', lineHeight: 1.7, fontStyle: 'italic' }}>
         Listen with intention. Let the words reach deeper than thought.
       </p>
     </div>

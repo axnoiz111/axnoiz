@@ -21,7 +21,7 @@ const MOOD_CONFIG: Record<string, { label: string; color: string }> = {
 
 function MoodBadge({ mood }: { mood: string | null }) {
   if (!mood) return null
-  const cfg = MOOD_CONFIG[mood] ?? { label: mood, color: '#4A5A7A' }
+  const cfg = MOOD_CONFIG[mood] ?? { label: mood, color: 'var(--text-dim)' }
   return (
     <span style={{
       fontSize: '10px', padding: '3px 8px', borderRadius: '9999px',
@@ -68,7 +68,7 @@ function MoodBar({ sessions }: { sessions: Session[] }) {
       padding: '16px 18px',
       marginBottom: '16px',
     }}>
-      <p style={{ fontSize: '11px', color: '#4A5A7A', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
+      <p style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
         Mood Distribution
       </p>
       <div style={{ display: 'flex', height: '8px', borderRadius: '4px', overflow: 'hidden', gap: '2px', marginBottom: '10px' }}>
@@ -90,7 +90,7 @@ function MoodBar({ sessions }: { sessions: Session[] }) {
           const cfg = MOOD_CONFIG[key]
           const pct = Math.round((count / total) * 100)
           return (
-            <span key={key} style={{ fontSize: '11px', color: '#4A5A7A' }}>
+            <span key={key} style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
               <span style={{ color: cfg.color }}>{cfg.label}</span> {pct}%
             </span>
           )
@@ -126,7 +126,7 @@ export default function TrackerTab({ refreshKey }: Props) {
 
   if (loading) {
     return (
-      <div style={{ padding: '60px 20px', textAlign: 'center', color: '#4A5A7A', fontSize: '13px' }}>
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '13px' }}>
         Loading...
       </div>
     )
@@ -140,8 +140,8 @@ export default function TrackerTab({ refreshKey }: Props) {
           borderRadius: '14px', padding: '56px 24px',
           textAlign: 'center',
         }}>
-          <p style={{ fontSize: '15px', color: '#8A9ABE', marginBottom: '8px' }}>Nothing tracked yet.</p>
-          <p style={{ fontSize: '13px', color: '#2E3D5A', lineHeight: 1.7 }}>
+          <p style={{ fontSize: '15px', color: 'var(--text-muted)', marginBottom: '8px' }}>Nothing tracked yet.</p>
+          <p style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.7 }}>
             Complete your first listening session<br />and your progress will appear here.
           </p>
         </div>
@@ -174,7 +174,7 @@ export default function TrackerTab({ refreshKey }: Props) {
             <p style={{ fontSize: stat.small ? '12px' : '22px', color: '#C8D4F0', fontWeight: stat.small ? 400 : 500, marginBottom: '4px' }}>
               {stat.value}
             </p>
-            <p style={{ fontSize: '10px', color: '#2E3D5A', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <p style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               {stat.label}
             </p>
           </div>
@@ -183,7 +183,7 @@ export default function TrackerTab({ refreshKey }: Props) {
 
       <MoodBar sessions={sessions} />
 
-      <p style={{ fontSize: '11px', color: '#2E3D5A', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
+      <p style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
         Recent Sessions
       </p>
 
@@ -206,7 +206,7 @@ export default function TrackerTab({ refreshKey }: Props) {
                 <p style={{ fontSize: '13px', color: '#C8D4F0', marginBottom: '3px' }}>
                   {session.audio_title}
                 </p>
-                <p style={{ fontSize: '11px', color: '#2E3D5A' }}>
+                <p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
                   {timeAgo(session.completed_at)}
                   {session.loops_completed > 1 ? ` · ${session.loops_completed} loops` : ''}
                 </p>

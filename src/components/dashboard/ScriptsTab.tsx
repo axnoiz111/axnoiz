@@ -27,9 +27,9 @@ async function generateAudio(text: string): Promise<Blob> {
 const S = {
   card: 'rgba(8,18,34,0.7)',
   border: 'rgba(255,255,255,0.07)',
-  text: '#C8D4F0',
-  muted: '#6A7A9A',
-  dim: '#2E3D5A',
+  text: 'var(--text)',
+  muted: 'var(--text-muted)',
+  dim: 'var(--text-dim)',
 }
 
 interface Script {

@@ -113,7 +113,7 @@ export default function Dashboard() {
           <span className="font-display" style={{ fontSize: '20px', color: '#E8EDF8', letterSpacing: '0.06em' }}>
             AXNOIZ
           </span>
-          <p style={{ fontSize: '10px', color: '#2E3D5A', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: '4px' }}>
+          <p style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: '4px' }}>
             Access your inner voice
           </p>
         </div>
@@ -134,7 +134,7 @@ export default function Dashboard() {
                   padding: '10px 12px', borderRadius: '8px',
                   background: active ? 'rgba(108,99,255,0.12)' : 'transparent',
                   border: 'none', cursor: 'pointer',
-                  color: active ? '#A09AFF' : '#3D5070',
+                  color: active ? '#A09AFF' : 'var(--text-dim)',
                   fontSize: '13px', fontFamily: 'inherit',
                   transition: 'all 0.15s',
                   width: '100%', textAlign: 'left',
@@ -179,7 +179,7 @@ export default function Dashboard() {
               <p style={{ fontSize: '12px', color: '#C8D4F0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {loadingProfile ? '…' : firstName}
               </p>
-              <p style={{ fontSize: '10px', color: '#2E3D5A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{ fontSize: '10px', color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {displayEmail}
               </p>
             </div>
@@ -192,11 +192,11 @@ export default function Dashboard() {
               padding: '9px 12px', borderRadius: '8px',
               background: 'transparent', border: 'none',
               cursor: 'pointer', width: '100%', textAlign: 'left',
-              color: '#2E3D5A', fontSize: '12px', fontFamily: 'inherit',
+              color: 'var(--text-dim)', fontSize: '12px', fontFamily: 'inherit',
               transition: 'all 0.15s',
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,107,107,0.06)'; (e.currentTarget as HTMLElement).style.color = '#FF6B6B' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#2E3D5A' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)' }}
           >
             <LogOut size={14} />
             <span>Sign out</span>
@@ -280,7 +280,7 @@ export default function Dashboard() {
               style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: active ? '#8B83FF' : '#2E3D5A',
+                color: active ? '#8B83FF' : 'var(--text-dim)',
                 padding: '12px 0', transition: 'color 0.2s',
               }}
             >
