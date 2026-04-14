@@ -88,7 +88,7 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
-          generationConfig: { temperature: 0.85, maxOutputTokens: 300 },
+          generationConfig: { temperature: 0.85, maxOutputTokens: 800 },
         }),
       }
     )
@@ -102,7 +102,24 @@ serve(async (req) => {
     }
 
     const geminiData = await geminiRes.json()
-    const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+
+    // gemini-2.5-flash is a thinking model — parts[0] may be internal thoughts.
+    // Find the last non-thought part that contains text.
+    const parts: Array<{ text?: string; thought?: boolean }> =
+      geminiData.candidates?.[0]?.content?.parts ?? []
+    const raw = parts
+      .filter(p => !p.thought && typeof p.text === 'string' && p.text.trim())
+      .map(p => p.text as string)
+      .join('')
+      .trim()
+
+    if (!raw) {
+      return new Response(
+        JSON.stringify({ error: 'Gemini returned an empty response. Please try again.' }),
+        { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
     const parsed = JSON.parse(cleaned)
 
