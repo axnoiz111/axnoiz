@@ -76,14 +76,17 @@ serve(async (req) => {
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openaiKey) return new Response('OpenAI key not configured', { status: 500, headers: CORS })
 
+    // Add a breath-pause between each sentence so the words land with weight
+    const spacedText = text.trim().replace(/([.!?])\s+/g, '$1\n\n')
+
     const ttsRes = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'tts-1-hd',
         voice,
-        input: text.trim(),
-        speed: 0.85,
+        input: spacedText,
+        speed: 0.75,
       }),
     })
 
