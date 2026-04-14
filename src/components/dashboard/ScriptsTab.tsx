@@ -194,14 +194,25 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
                       marginBottom: '12px',
                       maxHeight: '240px',
                       overflowY: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
                     }}>
-                      <p style={{
-                        fontSize: '14px', color: '#9AAAC8',
-                        lineHeight: 1.9, whiteSpace: 'pre-wrap',
-                        fontFamily: 'Georgia, serif',
-                      }}>
-                        {script.content}
-                      </p>
+                      {script.content
+                        .split(/(?<=[.!?])\s+/)
+                        .filter(s => s.trim())
+                        .map((sentence, i) => (
+                          <p key={i} style={{
+                            fontSize: '14px', color: '#9AAAC8',
+                            lineHeight: 1.85, margin: 0,
+                            fontFamily: 'Georgia, serif',
+                            borderLeft: '2px solid rgba(108,99,255,0.2)',
+                            paddingLeft: '14px',
+                          }}>
+                            {sentence.trim()}
+                          </p>
+                        ))
+                      }
                     </div>
 
                     {/* Action buttons */}
