@@ -42,7 +42,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Authenticate caller
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return new Response('Unauthorized', { status: 401, headers: CORS })
 
@@ -54,7 +53,6 @@ serve(async (req) => {
     const { desire, deadline_month, deadline_year, current_situation } = await req.json()
     if (!desire?.trim()) return new Response('desire is required', { status: 400, headers: CORS })
 
-    // Enforce 10-script limit
     const { count } = await supabase
       .from('scripts')
       .select('*', { count: 'exact', head: true })
@@ -67,10 +65,9 @@ serve(async (req) => {
       )
     }
 
-    // Call Gemini via direct fetch (v1beta — stable, no SDK dep)
-    const geminiKey = Deno.env.get('GEMINI_API_KEY') ?? Deno.env.get('VITE_GEMINI_API_KEY')
-    if (!geminiKey) return new Response(
-      JSON.stringify({ error: 'Gemini key not configured' }),
+    const openaiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openaiKey) return new Response(
+      JSON.stringify({ error: 'OpenAI key not configured' }),
       { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } }
     )
 
@@ -81,54 +78,35 @@ serve(async (req) => {
       current_situation ?? '',
     )
 
-    const geminiBody = JSON.stringify({
-      contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
-      generationConfig: { temperature: 0.85, maxOutputTokens: 2048 },
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user',   content: prompt },
+        ],
+        temperature: 0.85,
+        max_tokens: 500,
+        response_format: { type: 'json_object' },
+      }),
     })
 
-    // Retry up to 4 times on 503 with longer backoff (3s, 6s, 10s)
-    let geminiRes!: Response
-    const delays = [3000, 6000, 10000]
-    for (let attempt = 0; attempt <= 3; attempt++) {
-      geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody }
-      )
-      if (geminiRes.status !== 503) break
-      if (attempt < 3) await new Promise(r => setTimeout(r, delays[attempt]))
-    }
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text()
+    if (!openaiRes.ok) {
+      const errText = await openaiRes.text()
       return new Response(
-        JSON.stringify({ error: `Gemini error ${geminiRes.status}: ${errText}` }),
+        JSON.stringify({ error: `OpenAI error ${openaiRes.status}: ${errText}` }),
         { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } }
       )
     }
 
-    const geminiData = await geminiRes.json()
+    const openaiData = await openaiRes.json()
+    const parsed = JSON.parse(openaiData.choices[0].message.content)
 
-    // gemini-2.5-flash is a thinking model — parts[0] may be internal thoughts.
-    // Find the last non-thought part that contains text.
-    const parts: Array<{ text?: string; thought?: boolean }> =
-      geminiData.candidates?.[0]?.content?.parts ?? []
-    const raw = parts
-      .filter(p => !p.thought && typeof p.text === 'string' && p.text.trim())
-      .map(p => p.text as string)
-      .join('')
-      .trim()
-
-    if (!raw) {
-      return new Response(
-        JSON.stringify({ error: 'Gemini returned an empty response. Please try again.' }),
-        { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
-    const parsed = JSON.parse(cleaned)
-
-    // Auto-save to database
     const { data: script, error: dbErr } = await supabase
       .from('scripts')
       .insert({
