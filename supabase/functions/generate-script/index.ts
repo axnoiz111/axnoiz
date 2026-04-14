@@ -84,7 +84,6 @@ serve(async (req) => {
     const geminiBody = JSON.stringify({
       contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
       generationConfig: { temperature: 0.85, maxOutputTokens: 2048 },
-          thinkingConfig: { thinkingBudget: 512 },
     })
 
     // Retry up to 3 times on 503 (temporary overload)
