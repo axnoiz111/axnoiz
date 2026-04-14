@@ -225,7 +225,6 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
         },
       })
       if (fnErr) {
-        // Extract actual error body from edge function response
         let msg = fnErr.message ?? 'Something went wrong. Please try again.'
         try {
           const body = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.()
@@ -242,7 +241,8 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
       setTimeout(() => setSavedToast(false), 3000)
     } catch (err: unknown) {
       setPhase('idle')
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+      setError(msg)
     }
   }
 

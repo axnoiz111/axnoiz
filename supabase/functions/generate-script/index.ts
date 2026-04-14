@@ -86,15 +86,16 @@ serve(async (req) => {
       generationConfig: { temperature: 0.85, maxOutputTokens: 2048 },
     })
 
-    // Retry up to 3 times on 503 (temporary overload)
+    // Retry up to 4 times on 503 with longer backoff (3s, 6s, 10s)
     let geminiRes!: Response
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    const delays = [3000, 6000, 10000]
+    for (let attempt = 0; attempt <= 3; attempt++) {
       geminiRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody }
       )
       if (geminiRes.status !== 503) break
-      if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 2000))
+      if (attempt < 3) await new Promise(r => setTimeout(r, delays[attempt]))
     }
 
     if (!geminiRes.ok) {
