@@ -86,7 +86,7 @@ serve(async (req) => {
         model: 'tts-1-hd',
         voice,
         input: spacedText,
-        speed: 0.75,
+        speed: 0.85,
       }),
     })
 
