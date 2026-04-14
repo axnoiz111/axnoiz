@@ -192,8 +192,6 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
                       borderRadius: '8px',
                       padding: '16px',
                       marginBottom: '12px',
-                      maxHeight: '240px',
-                      overflowY: 'auto',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '10px',
