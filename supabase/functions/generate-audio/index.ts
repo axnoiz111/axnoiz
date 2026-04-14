@@ -8,8 +8,8 @@ const CORS = {
 
 // Gender → default voice mapping
 function defaultVoice(gender: string | null): string {
-  if (gender === 'male')   return 'echo'    // clear, steady
-  if (gender === 'female') return 'shimmer' // soft, calm
+  if (gender === 'male')   return 'onyx'    // deep, resonant
+  if (gender === 'female') return 'nova'    // warm, intimate
   return 'alloy'                            // balanced neutral
 }
 
