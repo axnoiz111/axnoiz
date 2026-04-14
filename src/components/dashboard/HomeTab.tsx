@@ -326,9 +326,23 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
             <h2 className="font-display" style={{ fontSize: '24px', color: '#E8EDF8', fontWeight: 300, marginBottom: '20px' }}>
               {generatedScript.title}
             </h2>
-            <p style={{ fontSize: '15px', color: '#B8C8E8', lineHeight: 1.9, whiteSpace: 'pre-wrap', fontFamily: 'Georgia, serif' }}>
-              {generatedScript.content}
-            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {generatedScript.content
+                .split(/(?<=[.!?])\s+/)
+                .filter(s => s.trim())
+                .map((sentence, i) => (
+                  <p key={i} style={{
+                    fontSize: '15px', color: '#B8C8E8',
+                    lineHeight: 1.85, margin: 0,
+                    fontFamily: 'Georgia, serif',
+                    borderLeft: '2px solid rgba(108,99,255,0.2)',
+                    paddingLeft: '14px',
+                  }}>
+                    {sentence.trim()}
+                  </p>
+                ))
+              }
+            </div>
           </div>
 
           {/* Method card */}
@@ -675,22 +689,11 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
                 borderRadius: '14px', padding: '16px', marginBottom: '12px',
                 position: 'relative',
               }}>
-                {!currentReality && (
-                  <p style={{
-                    position: 'absolute', top: '16px', left: '16px', right: '16px',
-                    pointerEvents: 'none', margin: 0,
-                    fontSize: '14px', color: '#2C3D5C',
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontStyle: 'italic', fontWeight: 300, lineHeight: 1.65,
-                  }}>
-                    e.g. Currently working a job I don't feel called to, some savings, no clear path yet...
-                  </p>
-                )}
                 <textarea
                   ref={realityRef}
                   value={currentReality}
                   onChange={e => setCurrentReality(e.target.value)}
-                  placeholder=""
+                  placeholder="e.g. Currently working a job I don't feel called to, some savings, no clear path yet..."
                   rows={3}
                   onKeyDown={e => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -703,10 +706,8 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
                     border: 'none', outline: 'none',
                     color: 'var(--text-bright)', fontSize: '15px',
                     lineHeight: 1.65, resize: 'none',
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontStyle: 'italic', fontWeight: 300,
+                    fontFamily: 'inherit',
                     minHeight: '80px', maxHeight: '180px',
-                    position: 'relative', zIndex: 1,
                   }}
                 />
               </div>
