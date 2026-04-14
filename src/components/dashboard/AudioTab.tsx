@@ -251,6 +251,7 @@ function AudioPlayerCard({ audio, onDelete, onSessionSaved }: PlayerProps) {
   const handleDelete = async () => {
     if (!user) return
     setDeleting(true)
+    await supabase.storage.from('audio-files').remove([audio.storage_path])
     await supabase.from('audio_files').delete().eq('id', audio.id).eq('user_id', user.id)
     onDelete(audio.id)
   }

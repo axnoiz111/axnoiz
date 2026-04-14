@@ -12,20 +12,6 @@ const S = {
   dim: 'var(--text-dim)',
 }
 
-const VOICES = [
-  { id: 'onyx',    label: 'Onyx',    desc: 'Deep & resonant',   gender: 'male'    },
-  { id: 'echo',    label: 'Echo',    desc: 'Clear & steady',    gender: 'male'    },
-  { id: 'nova',    label: 'Nova',    desc: 'Warm & intimate',   gender: 'female'  },
-  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',       gender: 'female'  },
-  { id: 'alloy',   label: 'Alloy',   desc: 'Balanced & neutral',gender: 'neutral' },
-]
-
-function genderDefaultVoice(gender: string | null): string {
-  if (gender === 'male')   return 'onyx'
-  if (gender === 'female') return 'nova'
-  return 'alloy'
-}
-
 interface Script {
   id: string
   title: string
@@ -46,17 +32,12 @@ interface Props {
 
 export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated }: Props) {
   const { user } = useAuth()
-  const [expandedId, setExpandedId]       = useState<string | null>(null)
-  const [deletingId, setDeletingId]       = useState<string | null>(null)
-  const [convertingId, setConvertingId]   = useState<string | null>(null)
+  const [expandedId, setExpandedId]         = useState<string | null>(null)
+  const [deletingId, setDeletingId]         = useState<string | null>(null)
+  const [convertingId, setConvertingId]     = useState<string | null>(null)
   const [audioScriptIds, setAudioScriptIds] = useState<Set<string>>(new Set())
-  const [audioCount, setAudioCount]       = useState(0)
-  const [error, setError]                 = useState('')
-
-  // Voice picker state
-  const [voicePickerScriptId, setVoicePickerScriptId] = useState<string | null>(null)
-  const [selectedVoice, setSelectedVoice] = useState('alloy')
-  const [userGender, setUserGender]       = useState<string | null>(null)
+  const [audioCount, setAudioCount]         = useState(0)
+  const [error, setError]                   = useState('')
 
   // Load existing audio files
   useEffect(() => {
@@ -73,27 +54,6 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
         }
       })
   }, [user])
-
-  // Load user gender to pre-select voice
-  useEffect(() => {
-    if (!user) return
-    supabase
-      .from('profiles')
-      .select('gender')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
-        const gender = data?.gender ?? null
-        setUserGender(gender)
-        setSelectedVoice(genderDefaultVoice(gender))
-      })
-  }, [user])
-
-  const openVoicePicker = (scriptId: string) => {
-    setVoicePickerScriptId(scriptId)
-    setSelectedVoice(genderDefaultVoice(userGender))
-    setError('')
-  }
 
   const handleDelete = async (id: string) => {
     if (!user) return
@@ -119,11 +79,11 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
     }
     setError('')
     setConvertingId(script.id)
-    setVoicePickerScriptId(null)
 
     try {
+      // No voice passed — backend resolves from user's profile gender
       const { data, error: fnErr } = await supabase.functions.invoke('generate-audio', {
-        body: { script_id: script.id, text: script.content, voice: selectedVoice },
+        body: { script_id: script.id, text: script.content },
       })
       if (fnErr) throw fnErr
       if (data?.error) throw new Error(data.error)
@@ -244,92 +204,6 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
                       </p>
                     </div>
 
-                    {/* Voice picker (shown when not yet converted) */}
-                    <AnimatePresence>
-                      {voicePickerScriptId === script.id && !audioScriptIds.has(script.id) && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.22 }}
-                          style={{ overflow: 'hidden', marginBottom: '10px' }}
-                        >
-                          <div style={{
-                            background: 'rgba(108,99,255,0.05)',
-                            border: '1px solid rgba(108,99,255,0.15)',
-                            borderRadius: '10px',
-                            padding: '14px',
-                          }}>
-                            <p style={{ fontSize: '11px', color: '#7A8AAA', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>
-                              Choose a voice
-                            </p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                              {VOICES.map(v => (
-                                <button
-                                  key={v.id}
-                                  onClick={() => setSelectedVoice(v.id)}
-                                  style={{
-                                    padding: '8px 14px',
-                                    borderRadius: '8px',
-                                    border: selectedVoice === v.id
-                                      ? '1px solid rgba(108,99,255,0.6)'
-                                      : '1px solid rgba(255,255,255,0.08)',
-                                    background: selectedVoice === v.id
-                                      ? 'rgba(108,99,255,0.18)'
-                                      : 'rgba(255,255,255,0.03)',
-                                    cursor: 'pointer',
-                                    fontFamily: 'inherit',
-                                    transition: 'all 0.15s',
-                                    textAlign: 'left',
-                                  }}
-                                >
-                                  <p style={{ fontSize: '13px', color: selectedVoice === v.id ? '#B0A8FF' : '#8A9ABE', margin: 0 }}>
-                                    {v.label}
-                                  </p>
-                                  <p style={{ fontSize: '10px', color: '#4A5A7A', margin: 0, marginTop: '2px' }}>
-                                    {v.desc}
-                                  </p>
-                                </button>
-                              ))}
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                onClick={() => handleConvertToAudio(script)}
-                                disabled={convertingId === script.id}
-                                style={{
-                                  flex: 1, padding: '10px',
-                                  background: 'rgba(108,99,255,0.2)',
-                                  border: '1px solid rgba(108,99,255,0.35)',
-                                  borderRadius: '8px',
-                                  color: '#9A94F0', fontSize: '12px',
-                                  letterSpacing: '0.07em',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                  cursor: convertingId === script.id ? 'wait' : 'pointer',
-                                  fontFamily: 'inherit',
-                                }}
-                              >
-                                <Headphones size={13} />
-                                {convertingId === script.id ? 'Generating...' : 'Generate Audio'}
-                              </button>
-                              <button
-                                onClick={() => setVoicePickerScriptId(null)}
-                                style={{
-                                  padding: '10px 14px',
-                                  background: 'transparent',
-                                  border: '1px solid rgba(255,255,255,0.07)',
-                                  borderRadius: '8px',
-                                  color: S.dim, fontSize: '12px',
-                                  cursor: 'pointer', fontFamily: 'inherit',
-                                }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
                     {/* Action buttons */}
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {audioScriptIds.has(script.id) ? (
@@ -343,9 +217,9 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
                           <Check size={13} color="#4CAF82" />
                           <span style={{ fontSize: '12px', color: '#4CAF82' }}>Audio ready</span>
                         </div>
-                      ) : voicePickerScriptId !== script.id ? (
+                      ) : (
                         <button
-                          onClick={() => openVoicePicker(script.id)}
+                          onClick={() => handleConvertToAudio(script)}
                           disabled={convertingId === script.id || audioCount >= 5}
                           style={{
                             flex: 1, padding: '10px',
@@ -356,12 +230,13 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                             cursor: convertingId === script.id ? 'wait' : 'pointer',
                             fontFamily: 'inherit',
+                            opacity: audioCount >= 5 ? 0.4 : 1,
                           }}
                         >
                           <Headphones size={13} />
                           {convertingId === script.id ? 'Generating...' : 'Convert to Audio'}
                         </button>
-                      ) : null}
+                      )}
 
                       <button
                         onClick={() => handleDelete(script.id)}
