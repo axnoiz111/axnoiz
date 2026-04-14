@@ -6,6 +6,13 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Gender → default voice mapping
+function defaultVoice(gender: string | null): string {
+  if (gender === 'male')   return 'onyx'    // deep, resonant
+  if (gender === 'female') return 'nova'    // warm, intimate
+  return 'alloy'                            // balanced neutral
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -15,7 +22,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Authenticate caller
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return new Response('Unauthorized', { status: 401, headers: CORS })
 
@@ -24,7 +30,7 @@ serve(async (req) => {
     )
     if (authErr || !user) return new Response('Unauthorized', { status: 401, headers: CORS })
 
-    const { script_id, text } = await req.json()
+    const { script_id, text, voice: requestedVoice } = await req.json()
     if (!text?.trim()) return new Response('text is required', { status: 400, headers: CORS })
 
     // Enforce 5-audio limit
@@ -40,7 +46,22 @@ serve(async (req) => {
       )
     }
 
-    // Get script title (for record)
+    // Resolve voice: use requested voice or fall back to gender-based default
+    let voice = requestedVoice
+    if (!voice) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('gender')
+        .eq('id', user.id)
+        .single()
+      voice = defaultVoice(profile?.gender ?? null)
+    }
+
+    // Validate voice is a known OpenAI TTS voice
+    const VALID_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']
+    if (!VALID_VOICES.includes(voice)) voice = 'alloy'
+
+    // Get script title
     let scriptTitle = 'My Affirmation'
     if (script_id) {
       const { data: scriptRow } = await supabase
@@ -52,8 +73,6 @@ serve(async (req) => {
       if (scriptRow) scriptTitle = scriptRow.title
     }
 
-    // Call OpenAI TTS
-    // Voice: nova — warm, calm, intimate. Like your own best self speaking back to you.
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openaiKey) return new Response('OpenAI key not configured', { status: 500, headers: CORS })
 
@@ -62,9 +81,9 @@ serve(async (req) => {
       headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'tts-1-hd',
-        voice: 'nova',
+        voice,
         input: text.trim(),
-        speed: 0.92, // slightly slower for deeper absorption
+        speed: 0.85,
       }),
     })
 
@@ -74,20 +93,14 @@ serve(async (req) => {
     const audioId = crypto.randomUUID()
     const storagePath = `${user.id}/${audioId}.mp3`
 
-    // Upload to Supabase Storage
     const { error: uploadErr } = await supabase.storage
       .from('audio-files')
-      .upload(storagePath, audioBuffer, {
-        contentType: 'audio/mpeg',
-        upsert: false,
-      })
+      .upload(storagePath, audioBuffer, { contentType: 'audio/mpeg', upsert: false })
 
     if (uploadErr) throw uploadErr
 
-    // Estimate duration from file size (128kbps mp3: ~16KB/sec)
     const durationSeconds = Math.round(audioBuffer.byteLength / 16000)
 
-    // Insert record
     const { data: audioRecord, error: dbErr } = await supabase
       .from('audio_files')
       .insert({
@@ -103,7 +116,6 @@ serve(async (req) => {
 
     if (dbErr) throw dbErr
 
-    // Generate a signed URL (7-day expiry)
     const { data: urlData } = await supabase.storage
       .from('audio-files')
       .createSignedUrl(storagePath, 60 * 60 * 24 * 7)
