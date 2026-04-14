@@ -62,17 +62,31 @@ export default function Hero() {
           style={{
             fontSize: 'clamp(54px, 10vw, 104px)',
             color: 'var(--text)',
-            marginBottom: '48px',
+            marginBottom: '8px',
           }}
         >
           inner voice.
+        </motion.h1>
+
+        <motion.h1
+          className="font-display"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, delay: 1.05, ease: 'easeOut' }}
+          style={{
+            fontSize: 'clamp(54px, 10vw, 104px)',
+            color: 'var(--text-bright)',
+            marginBottom: '40px',
+          }}
+        >
+          Remove the noise.
         </motion.h1>
 
         {/* Subline */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, delay: 1.2 }}
+          transition={{ duration: 1.2, delay: 1.35 }}
           style={{
             fontSize: 'clamp(15px, 2vw, 18px)',
             color: 'var(--text-muted)',
@@ -82,7 +96,7 @@ export default function Hero() {
             marginBottom: '64px',
           }}
         >
-          Remove the noise. What remains is your truth.
+          What remains is your new reality.
         </motion.p>
 
         {/* CTA */}
