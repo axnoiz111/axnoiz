@@ -81,17 +81,21 @@ serve(async (req) => {
       current_situation ?? '',
     )
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
-          generationConfig: { temperature: 0.85, maxOutputTokens: 800 },
-        }),
-      }
-    )
+    const geminiBody = JSON.stringify({
+      contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
+      generationConfig: { temperature: 0.85, maxOutputTokens: 800 },
+    })
+
+    // Retry up to 3 times on 503 (temporary overload)
+    let geminiRes!: Response
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody }
+      )
+      if (geminiRes.status !== 503) break
+      if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 2000))
+    }
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text()
