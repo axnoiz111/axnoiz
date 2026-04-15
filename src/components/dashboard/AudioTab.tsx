@@ -179,23 +179,30 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
     })
   }, [audioFiles])
 
-  // Fire whenever playTrigger increments — loads the current track and plays it
+  // Fire whenever playTrigger increments — sets src imperatively and plays
   useEffect(() => {
     if (!sessionActive || playTrigger === 0) return
     const el = audioRef.current
     const audio = audioFiles[currentIndex]
     if (!el || !audio || !signedUrls[audio.id]) return
+    el.src = signedUrls[audio.id]
     el.load()
     el.play().catch(() => {})
   }, [playTrigger])
 
-  // When signed URLs arrive for the first track, start playing
+  // When signed URLs first arrive, set src and start playing the first track
   useEffect(() => {
     if (!sessionActive) return
     const audio = audioFiles[currentIndex]
     if (!audio || !signedUrls[audio.id]) return
     const el = audioRef.current
-    if (el && el.paused) el.play().catch(() => {})
+    if (!el) return
+    // Only set src if not already playing this track
+    if (el.paused && !el.src.includes(audio.id)) {
+      el.src = signedUrls[audio.id]
+      el.load()
+      el.play().catch(() => {})
+    }
   }, [signedUrls])
 
   const currentAudio = audioFiles[currentIndex]
@@ -216,6 +223,12 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
 
   const startSession = () => {
     if (audioFiles.length === 0) return
+    const firstAudio = audioFiles[0]
+    const url = signedUrls[firstAudio?.id]
+    if (url && audioRef.current) {
+      audioRef.current.src = url
+      audioRef.current.load()
+    }
     sessionStartRef.current = new Date()
     setCurrentIndex(0)
     setLoopCount(0)
@@ -303,10 +316,9 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
   return (
     <div style={{ padding: '28px 28px 120px', maxWidth: '720px', position: 'relative' }}>
 
-      {/* Hidden audio element */}
+      {/* Hidden audio element — src set imperatively only on track change */}
       <audio
         ref={audioRef}
-        src={currentAudio ? signedUrls[currentAudio.id] : undefined}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleEnded}
         onPlay={() => setIsPlaying(true)}
