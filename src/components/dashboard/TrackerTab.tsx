@@ -8,6 +8,8 @@ interface Session {
   audio_title: string
   loops_completed: number
   created_at: string
+  started_at: string | null
+  duration_seconds: number | null
   mood_after: string | null
   action_step: string | null
 }
@@ -17,6 +19,12 @@ const MOOD_CONFIG: Record<string, { label: string; color: string; score: number 
   good:    { label: 'Good',    color: '#FFB347', score: 2 },
   great:   { label: 'Great',   color: '#6C63FF', score: 3 },
   amazing: { label: 'Amazing', color: '#4CAF82', score: 4 },
+}
+
+function fmtMins(m: number) {
+  if (m < 1) return '<1m'
+  if (m < 60) return `${m}m`
+  return `${Math.floor(m / 60)}h ${m % 60}m`
 }
 
 function toDateStr(iso: string) {
@@ -266,7 +274,8 @@ function SessionHistory({ sessions }: { sessions: Session[] }) {
                         <p style={{ fontSize: '13px', color: '#C8D4F0', marginBottom: '2px' }}>{session.audio_title}</p>
                         <p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
                           {new Date(session.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                          {session.loops_completed > 1 ? ` · ${session.loops_completed} plays` : ''}
+                          {session.loops_completed > 0 ? ` · ${session.loops_completed} loops` : ''}
+                          {session.duration_seconds ? ` · ${fmtMins(Math.round(session.duration_seconds / 60))}` : ''}
                         </p>
                       </div>
                       {moodCfg && (
@@ -385,6 +394,17 @@ export default function TrackerTab({ refreshKey }: Props) {
     return new Date(s.created_at) > d
   }).length
 
+  const totalMinutes = Math.round(
+    sessions.reduce((sum, s) => sum + (s.duration_seconds ?? 0), 0) / 60
+  )
+  const weekMinutes = Math.round(
+    sessions.filter(s => {
+      const d = new Date(); d.setDate(d.getDate() - 7)
+      return new Date(s.created_at) > d
+    }).reduce((sum, s) => sum + (s.duration_seconds ?? 0), 0) / 60
+  )
+
+
   return (
     <div style={{ padding: '28px 28px 120px', maxWidth: '720px' }}>
 
@@ -404,9 +424,11 @@ export default function TrackerTab({ refreshKey }: Props) {
           </p>
         </div>
         {[
-          { label: 'Total', value: sessions.length },
+          { label: 'Sessions', value: sessions.length },
           { label: 'This Week', value: weekCount },
-          { label: 'Best', value: `${bestStreak}d` },
+          { label: 'Best Streak', value: `${bestStreak}d` },
+          { label: 'Total Time', value: fmtMins(totalMinutes) },
+          { label: 'Week Time', value: fmtMins(weekMinutes) },
         ].map(s => (
           <div key={s.label} style={{
             flex: 1,

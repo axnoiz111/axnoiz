@@ -44,22 +44,19 @@ function SessionMoodSheet({ cycleCount, audioTitles, onDone, onSkip }: MoodSheet
 
   return (
     <motion.div
-      initial={{ y: '100%' }}
-      animate={{ y: 0 }}
-      exit={{ y: '100%' }}
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 24 }}
       transition={{ type: 'spring', damping: 28, stiffness: 300 }}
       style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: '#060E1E',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: '18px 18px 0 0',
-        padding: '24px 24px 48px',
-        zIndex: 50,
-        maxWidth: '100vw',
+        background: 'rgba(6,14,30,0.98)',
+        border: '1px solid rgba(108,99,255,0.2)',
+        borderRadius: '16px',
+        padding: '24px',
+        marginTop: '16px',
+        zIndex: 10,
       }}
     >
-      <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)', margin: '0 auto 24px' }} />
-
       <p style={{ fontSize: '15px', color: '#F0F4FF', textAlign: 'center', marginBottom: '4px' }}>How do you feel?</p>
       <p style={{ fontSize: '12px', color: 'var(--text-dim)', textAlign: 'center', marginBottom: '20px' }}>
         After listening to {summary}
@@ -156,6 +153,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const audioRef = useRef<HTMLAudioElement>(null)
+  const sessionStartRef = useRef<Date | null>(null)
 
   // Load audio files
   useEffect(() => {
@@ -218,6 +216,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
 
   const startSession = () => {
     if (audioFiles.length === 0) return
+    sessionStartRef.current = new Date()
     setCurrentIndex(0)
     setLoopCount(0)
     setProgress(0)
@@ -242,6 +241,8 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
     if (!user) return
     setShowMoodSheet(false)
     const titles = audioFiles.map(a => a.script_title)
+    const startedAt = sessionStartRef.current
+    const durationSeconds = startedAt ? Math.round((Date.now() - startedAt.getTime()) / 1000) : null
     await supabase.from('listening_sessions').insert({
       user_id: user.id,
       audio_id: currentAudio?.id ?? null,
@@ -249,22 +250,28 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
       loops_completed: loopCount,
       mood_after: mood,
       action_step: note || null,
+      started_at: startedAt?.toISOString() ?? null,
+      duration_seconds: durationSeconds,
     })
+    sessionStartRef.current = null
     onSessionSaved()
   }
 
   const handleSessionSkip = async () => {
     if (!user) return
     setShowMoodSheet(false)
-    if (loopCount > 0) {
-      await supabase.from('listening_sessions').insert({
-        user_id: user.id,
-        audio_id: currentAudio?.id ?? null,
-        audio_title: audioFiles.length === 1 ? audioFiles[0].script_title : `${audioFiles.length} audios`,
-        loops_completed: loopCount,
-      })
-      onSessionSaved()
-    }
+    const startedAt = sessionStartRef.current
+    const durationSeconds = startedAt ? Math.round((Date.now() - startedAt.getTime()) / 1000) : null
+    await supabase.from('listening_sessions').insert({
+      user_id: user.id,
+      audio_id: currentAudio?.id ?? null,
+      audio_title: audioFiles.length === 1 ? audioFiles[0].script_title : `${audioFiles.length} audios`,
+      loops_completed: loopCount,
+      started_at: startedAt?.toISOString() ?? null,
+      duration_seconds: durationSeconds,
+    })
+    sessionStartRef.current = null
+    onSessionSaved()
   }
 
   const handleDelete = async (af: AudioFile) => {
