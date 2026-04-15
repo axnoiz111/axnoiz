@@ -72,42 +72,46 @@ function ActivityChart({ sessions }: { sessions: Session[] }) {
   const days = 28
   const today = new Date(); today.setHours(0,0,0,0)
 
-  const dayCounts: number[] = []
+  // Build per-day total minutes listened
+  const dayData: { minutes: number; date: Date }[] = []
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
     const ds = toDateStr(d.toISOString())
-    dayCounts.push(sessions.filter(s => toDateStr(s.completed_at) === ds).length)
+    const daySessions = sessions.filter(s => toDateStr(s.completed_at) === ds)
+    const minutes = Math.round(daySessions.reduce((sum, s) => sum + (s.duration_seconds ?? 0), 0) / 60)
+    dayData.push({ minutes, date: d })
   }
 
-  const max = Math.max(...dayCounts, 1)
+  const max = Math.max(...dayData.map(d => d.minutes), 1)
 
   return (
     <div>
       <p style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
-        28-Day Activity
+        28-Day Listening Time
       </p>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '48px' }}>
-        {dayCounts.map((count, i) => {
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '56px' }}>
+        {dayData.map(({ minutes, date }, i) => {
           const isToday = i === days - 1
-          const height = count === 0 ? 4 : Math.max(8, (count / max) * 48)
+          const height = minutes === 0 ? 2 : Math.max(6, (minutes / max) * 56)
+          const label = `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${minutes > 0 ? fmtMins(minutes) : 'no activity'}`
           return (
             <motion.div
               key={i}
               initial={{ height: 0 }}
               animate={{ height }}
               transition={{ delay: i * 0.01, duration: 0.4, ease: 'easeOut' }}
-              title={`${count} session${count !== 1 ? 's' : ''}`}
+              title={label}
               style={{
                 flex: 1,
                 borderRadius: '2px 2px 0 0',
-                background: count === 0
+                background: minutes === 0
                   ? 'rgba(255,255,255,0.04)'
                   : isToday
                   ? 'linear-gradient(180deg, #8B83FF, #6C63FF)'
-                  : `rgba(108,99,255,${0.2 + (count / max) * 0.7})`,
-                cursor: count > 0 ? 'default' : 'default',
-                minHeight: '4px',
+                  : `rgba(108,99,255,${0.15 + (minutes / max) * 0.75})`,
+                minHeight: '2px',
+                cursor: 'default',
               }}
             />
           )
