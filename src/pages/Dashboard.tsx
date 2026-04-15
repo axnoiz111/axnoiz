@@ -249,12 +249,12 @@ export default function Dashboard() {
             onAudioGenerated={() => setAudioRefreshKey(k => k + 1)}
           />
         )}
-        {tab === 'audio' && (
+        <div style={{ display: tab === 'audio' ? 'block' : 'none' }}>
           <AudioTab
             refreshKey={audioRefreshKey}
             onSessionSaved={() => setTrackerRefreshKey(k => k + 1)}
           />
-        )}
+        </div>
         {tab === 'tracker' && (
           <TrackerTab refreshKey={trackerRefreshKey} />
         )}
