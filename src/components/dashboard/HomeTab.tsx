@@ -1,6 +1,92 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
+
+// ── Custom Select ─────────────────────────────────────────────────────────────
+
+interface SelectOption { value: string; label: string }
+
+function CustomSelect({ value, onChange, options, placeholder }: {
+  value: string
+  onChange: (v: string) => void
+  options: SelectOption[]
+  placeholder: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  const selected = options.find(o => o.value === value)
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flex: 1 }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: 'rgba(8,18,34,0.75)',
+          border: `1px solid ${open ? 'rgba(108,99,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
+          borderRadius: '10px',
+          padding: '13px 14px',
+          color: selected ? '#C8D4F0' : '#4A5A7A',
+          fontSize: '14px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          userSelect: 'none',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <span>{selected?.label ?? placeholder}</span>
+        <ChevronDown
+          size={13}
+          color="#4A5A7A"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}
+        />
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0, right: 0,
+          background: '#060E1E',
+          border: '1px solid rgba(108,99,255,0.2)',
+          borderRadius: '10px',
+          zIndex: 200,
+          maxHeight: '220px',
+          overflowY: 'auto',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        }}>
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+              style={{
+                padding: '10px 14px',
+                color: value === opt.value ? '#A09AFF' : '#8A9ABE',
+                fontSize: '13px',
+                cursor: 'pointer',
+                background: value === opt.value ? 'rgba(108,99,255,0.1)' : 'transparent',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.background = 'rgba(108,99,255,0.05)' }}
+              onMouseLeave={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -669,24 +755,18 @@ export default function HomeTab({ profileName, userEmail, onScriptGenerated, onG
               </p>
 
               <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
-                <select
+                <CustomSelect
                   value={deadlineMonth}
-                  onChange={e => setDeadlineMonth(e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value="">Month</option>
-                  {MONTHS.map((m, i) => (
-                    <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>
-                  ))}
-                </select>
-                <select
+                  onChange={setDeadlineMonth}
+                  placeholder="Month"
+                  options={MONTHS.map((m, i) => ({ value: String(i + 1).padStart(2, '0'), label: m }))}
+                />
+                <CustomSelect
                   value={deadlineYear}
-                  onChange={e => setDeadlineYear(e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value="">Year</option>
-                  {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
+                  onChange={setDeadlineYear}
+                  placeholder="Year"
+                  options={yearOptions.map(y => ({ value: y, label: y }))}
+                />
               </div>
 
               <motion.button
@@ -786,22 +866,6 @@ export default function HomeTab({ profileName, userEmail, onScriptGenerated, onG
   )
 }
 
-// ── Shared styles ─────────────────────────────────────────────────────────────
-
-const selectStyle: React.CSSProperties = {
-  flex: 1,
-  background: 'rgba(8,18,34,0.75)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: '10px',
-  padding: '13px 14px',
-  color: '#C8D4F0',
-  fontSize: '14px',
-  fontFamily: 'inherit',
-  outline: 'none',
-  cursor: 'pointer',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-}
 
 const nextBtnStyle: React.CSSProperties = {
   width: '100%', padding: '14px',
