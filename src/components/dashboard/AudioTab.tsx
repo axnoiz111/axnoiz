@@ -213,7 +213,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
     setLoopCount(c => c + 1)
     setProgress(0)
     setCurrentIndex(nextIndex)
-    setPlayTrigger(t => t + 1)  // always increments → effect always fires
+    setTimeout(() => setPlayTrigger(t => t + 1), 1500)
   }
 
   const startSession = () => {
