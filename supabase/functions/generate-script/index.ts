@@ -33,6 +33,13 @@ function buildPrompt(desire: string, month: string, year: string, reality: strin
   return p
 }
 
+function isCurrentMonth(dateStr: string | null): boolean {
+  if (!dateStr) return false
+  const d = new Date(dateStr)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -53,16 +60,35 @@ serve(async (req) => {
     const { desire, deadline_month, deadline_year, current_situation } = await req.json()
     if (!desire?.trim()) return new Response('desire is required', { status: 400, headers: CORS })
 
-    const { count } = await supabase
-      .from('scripts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
+    // Fetch profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan, plan_expires_at, total_scripts_generated, monthly_scripts_generated, monthly_reset_at')
+      .eq('id', user.id)
+      .single()
 
-    if ((count ?? 0) >= 10) {
-      return new Response(
-        JSON.stringify({ error: 'You have 10 scripts saved. Delete one to generate a new one.' }),
-        { status: 422, headers: { ...CORS, 'Content-Type': 'application/json' } }
-      )
+    const isPro = profile?.plan === 'pro' &&
+      profile?.plan_expires_at &&
+      new Date(profile.plan_expires_at) > new Date()
+
+    if (isPro) {
+      const monthlyCount = isCurrentMonth(profile?.monthly_reset_at)
+        ? (profile?.monthly_scripts_generated ?? 0)
+        : 0
+      if (monthlyCount >= 10) {
+        return new Response(
+          JSON.stringify({ error: 'upgrade_required', message: 'You\'ve used all 10 scripts this month. Your limit resets next month.' }),
+          { status: 422, headers: { ...CORS, 'Content-Type': 'application/json' } }
+        )
+      }
+    } else {
+      // Free: 3 lifetime scripts
+      if ((profile?.total_scripts_generated ?? 0) >= 3) {
+        return new Response(
+          JSON.stringify({ error: 'upgrade_required', message: 'You\'ve used your 3 free scripts.' }),
+          { status: 422, headers: { ...CORS, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
@@ -119,6 +145,22 @@ serve(async (req) => {
       .single()
 
     if (dbErr) throw dbErr
+
+    // Increment counters — never decrements on delete
+    if (isPro) {
+      const newMonthly = isCurrentMonth(profile?.monthly_reset_at)
+        ? (profile?.monthly_scripts_generated ?? 0) + 1
+        : 1
+      await supabase.from('profiles').update({
+        total_scripts_generated: (profile?.total_scripts_generated ?? 0) + 1,
+        monthly_scripts_generated: newMonthly,
+        monthly_reset_at: new Date().toISOString().slice(0, 10),
+      }).eq('id', user.id)
+    } else {
+      await supabase.from('profiles').update({
+        total_scripts_generated: (profile?.total_scripts_generated ?? 0) + 1,
+      }).eq('id', user.id)
+    }
 
     return new Response(JSON.stringify(script), {
       headers: { ...CORS, 'Content-Type': 'application/json' },

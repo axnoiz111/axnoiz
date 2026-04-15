@@ -111,14 +111,44 @@ interface Script {
 interface Props {
   profileName: string | null
   userEmail: string
-  scriptCount: number
   onScriptGenerated: (script: Script) => void
   onGoToScripts: () => void
 }
 
+function UpgradeBanner() {
+  return (
+    <div style={{
+      marginTop: '12px',
+      background: 'rgba(108,99,255,0.07)',
+      border: '1px solid rgba(108,99,255,0.2)',
+      borderRadius: '10px',
+      padding: '16px 18px',
+      textAlign: 'center',
+    }}>
+      <p style={{ fontSize: '13px', color: '#C8C4FF', marginBottom: '6px', fontWeight: 500 }}>
+        You've used your 3 free scripts
+      </p>
+      <p style={{ fontSize: '12px', color: '#7A7AAA', lineHeight: 1.6, marginBottom: '12px' }}>
+        Upgrade to Pro for 10 fresh scripts every month — costs less than a RedBull, but this one actually helps you fly towards your desires.
+      </p>
+      <button style={{
+        background: 'linear-gradient(135deg, #6C63FF, #8B83FF)',
+        border: 'none', borderRadius: '8px',
+        padding: '10px 28px',
+        color: '#fff', fontSize: '12px', fontWeight: 600,
+        letterSpacing: '0.08em', cursor: 'pointer',
+        fontFamily: 'inherit',
+        boxShadow: '0 0 20px rgba(108,99,255,0.3)',
+      }}>
+        Upgrade to Pro — ₹99/month
+      </button>
+    </div>
+  )
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function HomeTab({ profileName, userEmail, scriptCount, onScriptGenerated, onGoToScripts }: Props) {
+export default function HomeTab({ profileName, userEmail, onScriptGenerated, onGoToScripts }: Props) {
   const { user } = useAuth()
 
   // Wizard state
@@ -137,6 +167,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
   const [phase, setPhase]               = useState<'idle' | 'generating' | 'result'>('idle')
   const [generatedScript, setGeneratedScript] = useState<Script | null>(null)
   const [error, setError]               = useState('')
+  const [showUpgrade, setShowUpgrade]   = useState(false)
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
   const [methodOpen, setMethodOpen]     = useState(false)
   const [savedToast, setSavedToast]     = useState(false)
@@ -207,11 +238,8 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
   // ── Generate ────────────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     if (!desire.trim() || !user) return
-    if (scriptCount >= 10) {
-      setError('You have 10 scripts saved. Delete one from the Scripts tab to generate a new one.')
-      return
-    }
     setError('')
+    setShowUpgrade(false)
     setPhase('generating')
     setLoadingMsgIdx(0)
 
@@ -225,12 +253,21 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
         },
       })
       if (fnErr) {
-        let msg = fnErr.message ?? 'Something went wrong. Please try again.'
+        let errPayload: { error?: string } = {}
         try {
-          const body = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.()
-          if (body?.error) msg = body.error
-        } catch { /* ignore parse failure */ }
-        throw new Error(msg)
+          errPayload = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.() ?? {}
+        } catch { /* ignore */ }
+        if (errPayload?.error === 'upgrade_required') {
+          setPhase('idle')
+          setShowUpgrade(true)
+          return
+        }
+        throw new Error(errPayload?.error ?? fnErr.message ?? 'Something went wrong.')
+      }
+      if (data?.error === 'upgrade_required') {
+        setPhase('idle')
+        setShowUpgrade(true)
+        return
       }
       if (data?.error) throw new Error(data.error)
 
@@ -241,8 +278,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
       setTimeout(() => setSavedToast(false), 3000)
     } catch (err: unknown) {
       setPhase('idle')
-      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
-      setError(msg)
+      setError(err instanceof Error ? err.message : 'Something went wrong.')
     }
   }
 
@@ -596,6 +632,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
                 </div>
               </div>
 
+              {showUpgrade && <UpgradeBanner />}
               {error && (
                 <p style={{ fontSize: '12px', color: '#CC6666', textAlign: 'center', marginTop: '8px' }}>{error}</p>
               )}
@@ -712,6 +749,7 @@ export default function HomeTab({ profileName, userEmail, scriptCount, onScriptG
                 />
               </div>
 
+              {showUpgrade && <UpgradeBanner />}
               {error && (
                 <p style={{ fontSize: '12px', color: '#CC6666', textAlign: 'center', marginBottom: '12px' }}>{error}</p>
               )}

@@ -238,7 +238,6 @@ export default function Dashboard() {
           <HomeTab
             profileName={profileName}
             userEmail={user.email!}
-            scriptCount={scripts.length}
             onScriptGenerated={s => setScripts(prev => [s, ...prev])}
             onGoToScripts={() => setTab('scripts')}
           />

@@ -4,6 +4,37 @@ import { ChevronDown, ChevronUp, Trash2, Headphones, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 
+function UpgradeBanner() {
+  return (
+    <div style={{
+      background: 'rgba(108,99,255,0.07)',
+      border: '1px solid rgba(108,99,255,0.2)',
+      borderRadius: '10px',
+      padding: '16px 18px',
+      textAlign: 'center',
+      marginBottom: '14px',
+    }}>
+      <p style={{ fontSize: '13px', color: '#C8C4FF', marginBottom: '6px', fontWeight: 500 }}>
+        You've used your 1 free audio
+      </p>
+      <p style={{ fontSize: '12px', color: '#7A7AAA', lineHeight: 1.6, marginBottom: '12px' }}>
+        Upgrade to Pro for 5 audio conversions every month — costs less than a RedBull, but this one actually helps you fly towards your desires.
+      </p>
+      <button style={{
+        background: 'linear-gradient(135deg, #6C63FF, #8B83FF)',
+        border: 'none', borderRadius: '8px',
+        padding: '10px 28px',
+        color: '#fff', fontSize: '12px', fontWeight: 600,
+        letterSpacing: '0.08em', cursor: 'pointer',
+        fontFamily: 'inherit',
+        boxShadow: '0 0 20px rgba(108,99,255,0.3)',
+      }}>
+        Upgrade to Pro — ₹99/month
+      </button>
+    </div>
+  )
+}
+
 const S = {
   card: 'rgba(8,18,34,0.7)',
   border: 'rgba(255,255,255,0.07)',
@@ -38,6 +69,7 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
   const [audioScriptIds, setAudioScriptIds] = useState<Set<string>>(new Set())
   const [audioCount, setAudioCount]         = useState(0)
   const [error, setError]                   = useState('')
+  const [showUpgrade, setShowUpgrade]       = useState(false)
 
   // Load existing audio files
   useEffect(() => {
@@ -73,26 +105,36 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
 
   const handleConvertToAudio = async (script: Script) => {
     if (!user) return
-    if (audioCount >= 5) {
-      setError('You have 5 audio files saved. Delete one from the Audio tab to generate a new one.')
-      return
-    }
     setError('')
+    setShowUpgrade(false)
     setConvertingId(script.id)
 
     try {
-      // No voice passed — backend resolves from user's profile gender
       const { data, error: fnErr } = await supabase.functions.invoke('generate-audio', {
         body: { script_id: script.id, text: script.content },
       })
-      if (fnErr) throw fnErr
+      if (fnErr) {
+        let errPayload: { error?: string } = {}
+        try {
+          errPayload = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.() ?? {}
+        } catch { /* ignore */ }
+        if (errPayload?.error === 'upgrade_required') {
+          setShowUpgrade(true)
+          return
+        }
+        throw new Error(errPayload?.error ?? fnErr.message ?? 'Failed to generate audio.')
+      }
+      if (data?.error === 'upgrade_required') {
+        setShowUpgrade(true)
+        return
+      }
       if (data?.error) throw new Error(data.error)
 
       setAudioScriptIds(prev => new Set([...prev, script.id]))
       setAudioCount(c => c + 1)
       onAudioGenerated()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to generate audio. Please try again.')
+      setError(err instanceof Error ? err.message : 'Failed to generate audio.')
     } finally {
       setConvertingId(null)
     }
@@ -133,6 +175,7 @@ export default function ScriptsTab({ scripts, onScriptsChange, onAudioGenerated 
         </span>
       </div>
 
+      {showUpgrade && <UpgradeBanner />}
       {error && (
         <p style={{ fontSize: '12px', color: '#CC6666', marginBottom: '14px' }}>{error}</p>
       )}
