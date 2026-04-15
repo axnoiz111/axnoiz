@@ -7,7 +7,7 @@ interface Session {
   id: string
   audio_title: string
   loops_completed: number
-  created_at: string
+  completed_at: string
   started_at: string | null
   duration_seconds: number | null
   mood_after: string | null
@@ -41,7 +41,7 @@ function formatDateLabel(dateStr: string) {
 }
 
 function calcStreak(sessions: Session[]): { current: number; best: number } {
-  const dates = new Set(sessions.map(s => toDateStr(s.created_at)))
+  const dates = new Set(sessions.map(s => toDateStr(s.completed_at)))
   const today = new Date(); today.setHours(0,0,0,0)
 
   let current = 0
@@ -77,7 +77,7 @@ function ActivityChart({ sessions }: { sessions: Session[] }) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
     const ds = toDateStr(d.toISOString())
-    dayCounts.push(sessions.filter(s => toDateStr(s.created_at) === ds).length)
+    dayCounts.push(sessions.filter(s => toDateStr(s.completed_at) === ds).length)
   }
 
   const max = Math.max(...dayCounts, 1)
@@ -229,7 +229,7 @@ function MoodDistribution({ sessions }: { sessions: Session[] }) {
 function SessionHistory({ sessions }: { sessions: Session[] }) {
   const groups: Record<string, Session[]> = {}
   sessions.forEach(s => {
-    const d = toDateStr(s.created_at)
+    const d = toDateStr(s.completed_at)
     if (!groups[d]) groups[d] = []
     groups[d].push(s)
   })
@@ -273,7 +273,7 @@ function SessionHistory({ sessions }: { sessions: Session[] }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: '13px', color: '#C8D4F0', marginBottom: '2px' }}>{session.audio_title}</p>
                         <p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                          {new Date(session.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(session.completed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                           {session.loops_completed > 0 ? ` · ${session.loops_completed} loops` : ''}
                           {session.duration_seconds ? ` · ${fmtMins(Math.round(session.duration_seconds / 60))}` : ''}
                         </p>
@@ -363,7 +363,7 @@ export default function TrackerTab({ refreshKey }: Props) {
       .from('listening_sessions')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('completed_at', { ascending: false })
       .limit(100)
       .then(({ data }) => {
         setSessions(data ?? [])
@@ -391,7 +391,7 @@ export default function TrackerTab({ refreshKey }: Props) {
   const { current: streak, best: bestStreak } = calcStreak(sessions)
   const weekCount = sessions.filter(s => {
     const d = new Date(); d.setDate(d.getDate() - 7)
-    return new Date(s.created_at) > d
+    return new Date(s.completed_at) > d
   }).length
 
   const totalMinutes = Math.round(
@@ -400,7 +400,7 @@ export default function TrackerTab({ refreshKey }: Props) {
   const weekMinutes = Math.round(
     sessions.filter(s => {
       const d = new Date(); d.setDate(d.getDate() - 7)
-      return new Date(s.created_at) > d
+      return new Date(s.completed_at) > d
     }).reduce((sum, s) => sum + (s.duration_seconds ?? 0), 0) / 60
   )
 

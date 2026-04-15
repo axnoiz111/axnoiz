@@ -265,6 +265,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
       action_step: note || null,
       started_at: startedAt?.toISOString() ?? null,
       duration_seconds: durationSeconds,
+      completed_at: new Date().toISOString(),
     })
     sessionStartRef.current = null
     onSessionSaved()
@@ -282,6 +283,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
       loops_completed: loopCount,
       started_at: startedAt?.toISOString() ?? null,
       duration_seconds: durationSeconds,
+      completed_at: new Date().toISOString(),
     })
     sessionStartRef.current = null
     onSessionSaved()
