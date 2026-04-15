@@ -148,8 +148,8 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
   // Session state
   const [sessionActive, setSessionActive] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [cycleCount, setCycleCount] = useState(0)
-  const [totalPlays, setTotalPlays] = useState(0)
+  const [loopCount, setLoopCount] = useState(0)       // total plays across all audios
+  const [playTrigger, setPlayTrigger] = useState(0)   // increments every time we need to (re)play
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [showMoodSheet, setShowMoodSheet] = useState(false)
@@ -181,23 +181,23 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
     })
   }, [audioFiles])
 
-  // When currentIndex changes during an active session, load + play next audio
+  // Fire whenever playTrigger increments — loads the current track and plays it
   useEffect(() => {
-    if (!sessionActive) return
+    if (!sessionActive || playTrigger === 0) return
     const el = audioRef.current
     const audio = audioFiles[currentIndex]
     if (!el || !audio || !signedUrls[audio.id]) return
     el.load()
     el.play().catch(() => {})
-  }, [currentIndex, sessionActive])
+  }, [playTrigger])
 
-  // Also play when signed URLs first arrive (for the initial audio)
+  // When signed URLs arrive for the first track, start playing
   useEffect(() => {
-    if (!sessionActive || currentIndex !== 0) return
+    if (!sessionActive) return
+    const audio = audioFiles[currentIndex]
+    if (!audio || !signedUrls[audio.id]) return
     const el = audioRef.current
-    const audio = audioFiles[0]
-    if (!el || !audio || !signedUrls[audio.id]) return
-    if (el.paused) el.play().catch(() => {})
+    if (el && el.paused) el.play().catch(() => {})
   }, [signedUrls])
 
   const currentAudio = audioFiles[currentIndex]
@@ -210,18 +210,18 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
 
   const handleEnded = () => {
     const nextIndex = (currentIndex + 1) % audioFiles.length
-    if (nextIndex === 0) setCycleCount(c => c + 1)
-    setTotalPlays(p => p + 1)
+    setLoopCount(c => c + 1)
     setProgress(0)
     setCurrentIndex(nextIndex)
+    setPlayTrigger(t => t + 1)  // always increments → effect always fires
   }
 
   const startSession = () => {
     if (audioFiles.length === 0) return
     setCurrentIndex(0)
-    setCycleCount(1)
-    setTotalPlays(0)
+    setLoopCount(0)
     setProgress(0)
+    setPlayTrigger(0)
     setSessionActive(true)
   }
 
@@ -245,8 +245,8 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
     await supabase.from('listening_sessions').insert({
       user_id: user.id,
       audio_id: currentAudio?.id ?? null,
-      audio_title: titles.length === 1 ? titles[0] : `${titles.length} audios · ${cycleCount} cycle${cycleCount !== 1 ? 's' : ''}`,
-      loops_completed: totalPlays,
+      audio_title: titles.length === 1 ? titles[0] : `${titles.length} audios`,
+      loops_completed: loopCount,
       mood_after: mood,
       action_step: note || null,
     })
@@ -256,12 +256,12 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
   const handleSessionSkip = async () => {
     if (!user) return
     setShowMoodSheet(false)
-    if (totalPlays > 0) {
+    if (loopCount > 0) {
       await supabase.from('listening_sessions').insert({
         user_id: user.id,
         audio_id: currentAudio?.id ?? null,
-        audio_title: audioFiles.length === 1 ? audioFiles[0].script_title : `${audioFiles.length} audios · ${cycleCount} cycle${cycleCount !== 1 ? 's' : ''}`,
-        loops_completed: totalPlays,
+        audio_title: audioFiles.length === 1 ? audioFiles[0].script_title : `${audioFiles.length} audios`,
+        loops_completed: loopCount,
       })
       onSessionSaved()
     }
@@ -333,8 +333,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
               display: 'flex', gap: '10px', marginBottom: '16px',
             }}>
               {[
-                { label: 'Cycle', value: cycleCount },
-                { label: 'Plays', value: totalPlays },
+                { label: 'Loops', value: loopCount },
                 { label: 'Track', value: `${currentIndex + 1} / ${audioFiles.length}` },
               ].map(s => (
                 <div key={s.label} style={{
@@ -527,7 +526,7 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
       <AnimatePresence>
         {showMoodSheet && (
           <SessionMoodSheet
-            cycleCount={cycleCount}
+            cycleCount={loopCount}
             audioTitles={audioFiles.map(a => a.script_title)}
             onDone={handleSessionSave}
             onSkip={handleSessionSkip}
