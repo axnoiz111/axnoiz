@@ -29,13 +29,12 @@ function formatDuration(secs: number | null) {
 
 interface MoodSheetProps {
   cycleCount: number
-  totalPlays: number
   audioTitles: string[]
   onDone: (mood: string, note: string) => void
   onSkip: () => void
 }
 
-function SessionMoodSheet({ cycleCount, totalPlays, audioTitles, onDone, onSkip }: MoodSheetProps) {
+function SessionMoodSheet({ cycleCount, audioTitles, onDone, onSkip }: MoodSheetProps) {
   const [mood, setMood] = useState<string | null>(null)
   const [note, setNote] = useState('')
 
@@ -529,7 +528,6 @@ export default function AudioTab({ refreshKey, onSessionSaved }: Props) {
         {showMoodSheet && (
           <SessionMoodSheet
             cycleCount={cycleCount}
-            totalPlays={totalPlays}
             audioTitles={audioFiles.map(a => a.script_title)}
             onDone={handleSessionSave}
             onSkip={handleSessionSkip}
